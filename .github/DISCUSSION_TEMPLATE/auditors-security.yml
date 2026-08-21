@@ -1,0 +1,44 @@
+title: "[Audit] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two directions, one category. **Requesting** an audit: fill the scope fields. **Offering** audits: real identity and checkable credentials are required — anonymous auditor intros aren't published.
+  - type: dropdown
+    id: direction
+    attributes:
+      label: This post is
+      options:
+        - An audit request (maker)
+        - An auditor introduction (security professional)
+    validations:
+      required: true
+  - type: textarea
+    id: app
+    attributes:
+      label: App, or practice, in one paragraph
+      description: Makers: what it does, for whom, rough traffic/revenue (ranges fine). Auditors: who you are, firm, and the scope you actually serve.
+    validations:
+      required: true
+  - type: textarea
+    id: arch
+    attributes:
+      label: Architecture sketch / credentials
+      description: Makers: stack, hosting, model provider(s), tools or retrieval, multi-tenant or not, payments — five honest lines. Auditors: certifications with registry-verifiable IDs, CVEs, redacted sample reports, named references.
+    validations:
+      required: true
+  - type: textarea
+    id: surface
+    attributes:
+      label: Surface inventory / what you don't cover
+      description: Makers: route count, integrations, webhooks, anything public you're unsure about. Auditors: the layers you don't do — just as useful.
+    validations:
+      required: true
+  - type: input
+    id: timing
+    attributes:
+      label: Timing and budget band
+      description: When, and a range. "How much for an audit?" is unanswerable without it.
+    validations:
+      required: false
