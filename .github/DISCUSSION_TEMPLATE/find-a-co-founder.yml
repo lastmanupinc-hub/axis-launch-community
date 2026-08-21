@@ -1,0 +1,49 @@
+title: "[Co-founder] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Structured intros get responses; vibes-based ones don't. Looking to **join** a project instead? Use the same form and say so under *Commitment*.
+  - type: input
+    id: who
+    attributes:
+      label: Who you are
+      description: Name or consistent handle, location, timezone.
+    validations:
+      required: true
+  - type: textarea
+    id: bring
+    attributes:
+      label: What you bring
+      description: Concrete skills with evidence — shipped products, repos, revenue, domain years. Links beat adjectives.
+    validations:
+      required: true
+  - type: textarea
+    id: project
+    attributes:
+      label: The project
+      description: One paragraph. Stage (idea / prototype / revenue), what exists today, what's live.
+    validations:
+      required: true
+  - type: textarea
+    id: looking
+    attributes:
+      label: Who you're looking for
+      description: The specific gap. "Technical co-founder" is too vague — name the stack or the function.
+    validations:
+      required: true
+  - type: input
+    id: commitment
+    attributes:
+      label: Commitment
+      description: Hours per week you're putting in, and what you expect from them.
+    validations:
+      required: true
+  - type: input
+    id: terms
+    attributes:
+      label: Terms you'd consider
+      description: Equity-only (at what stage), pay + equity, or a paid trial first.
+    validations:
+      required: false
