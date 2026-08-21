@@ -1,0 +1,19 @@
+title: "[Q] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help with AXIS Launch itself — listings, badges, auctions, PAID, pricing, moderation decisions, roadmap. Pointed questions about the business model welcome. Co-founder, audit, and fundraising posts have their own categories.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: input
+    id: listing
+    attributes:
+      label: Listing slug, if it's about a specific listing
+    validations:
+      required: false
