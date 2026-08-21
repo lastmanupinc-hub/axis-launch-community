@@ -1,0 +1,41 @@
+title: "[Raise prep] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **No securities offerings on-platform.** This category refines how you *describe* a raise — posts that read as offers ("invest, $10k minimum") are removed under the policy pack, every time. Post the pitch paragraph, workshopped.
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      description: One sentence — user, task, what changes for them.
+    validations:
+      required: true
+  - type: textarea
+    id: numbers
+    attributes:
+      label: Numbers
+      description: Three, with dates. Include your weakest relevant one.
+    validations:
+      required: true
+  - type: input
+    id: accumulation
+    attributes:
+      label: Accumulation
+      description: One sentence on what compounds — your answer to the wrapper question.
+    validations:
+      required: true
+  - type: input
+    id: ask
+    attributes:
+      label: The ask
+      description: What you're raising toward and what it buys — described, not offered.
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: What you want feedback on
+    validations:
+      required: false
