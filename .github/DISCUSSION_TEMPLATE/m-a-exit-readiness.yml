@@ -1,0 +1,28 @@
+title: "[Exit] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Diligence, valuation, Trust Fabric Passport and what buyers actually check. Admin-answered. No valuation guarantees are given here — the 3–5x range is labeled guidance, not a quote.
+  - type: textarea
+    id: situation
+    attributes:
+      label: Your situation
+      description: Stage, revenue shape (MRR / one-off / usage), how long the history is, whether PAID is connected.
+    validations:
+      required: true
+  - type: input
+    id: horizon
+    attributes:
+      label: Horizon
+      description: Selling in 3 months, 12 months, or just getting ready?
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+      description: Specific beats general: "is 40% customer concentration disqualifying?" gets a real answer.
+    validations:
+      required: true
