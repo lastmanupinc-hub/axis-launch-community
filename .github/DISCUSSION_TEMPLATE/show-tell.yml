@@ -1,0 +1,46 @@
+title: "[Build] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The front porch. Build logs, launches in progress, honest progress reports — and the top of the listing pipeline: threads here regularly become listings, and the dated history becomes diligence evidence later.
+  - type: input
+    id: what
+    attributes:
+      label: What it is
+      description: One sentence — user, task, what changes for them. Same discipline as a listing tagline; practice it here.
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Stage
+      description: No shame at any stage; mislabeling the stage is the only foul.
+      options:
+        - Idea
+        - Building
+        - Live
+        - Revenue
+    validations:
+      required: true
+  - type: textarea
+    id: real
+    attributes:
+      label: What's real today
+      description: What a stranger can actually touch — link, screenshot of real output, or an honest "nothing public yet, here's the latest artifact."
+    validations:
+      required: true
+  - type: textarea
+    id: numbers
+    attributes:
+      label: Numbers, if any, with dates
+      description: "3 users, 2 active weekly (August 2026)" is a fine line. Unverified is fine; undated is not.
+    validations:
+      required: false
+  - type: input
+    id: next
+    attributes:
+      label: What's next
+    validations:
+      required: false
