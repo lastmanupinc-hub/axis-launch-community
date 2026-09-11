@@ -1,0 +1,141 @@
+name: Daily ads
+
+# Builds the day's ad set, renders the creative, commits both, and offers them to the
+# platforms. The publish job targets the `ads-publish` environment - add required reviewers
+# there and every publish waits for a human click.
+#
+# Even on a live publish, ads are created PAUSED. Turning spend on is a human action in
+# Ads Manager, deliberately and permanently.
+on:
+  schedule:
+    - cron: "07 12 * * *"     # 12:07 UTC daily
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "ISO date to build (default: today)"
+        required: false
+      days:
+        description: "How many consecutive days to build"
+        required: false
+        default: "1"
+      publish:
+        description: "Offer to the platforms after building"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ads-${{ github.event.inputs.date || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.build.outputs.date }}
+      publishable: ${{ steps.build.outputs.publishable }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: marketing/requirements.txt
+
+      - run: pip install -r marketing/requirements.txt
+
+      - name: Run guard tests
+        run: |
+          python3 marketing/tests/test_guards.py
+          python3 marketing/tests/test_sources.py
+
+      - name: Install Chromium for creative rendering
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium-browser || sudo apt-get install -y -qq chromium
+
+      - name: Build ad set
+        id: build
+        run: |
+          DATE="${{ github.event.inputs.date }}"
+          DATE="${DATE:-$(date -u +%F)}"
+          DAYS="${{ github.event.inputs.days }}"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          python3 marketing/scripts/build_ads.py --date "$DATE" --days "${DAYS:-1}" | tee ads.log
+          PUB=$(python3 -c "import json;print(str(json.load(open('marketing/out/ads/$DATE/ad-set.json'))['publishable']).lower())")
+          echo "publishable=$PUB" >> "$GITHUB_OUTPUT"
+
+      - name: Render creative
+        run: python3 marketing/scripts/render_creative.py --date ${{ steps.build.outputs.date }} 2>&1 | tee -a ads.log
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Ad set ${{ steps.build.outputs.date }}"
+            echo ""
+            echo "Publishable: \`${{ steps.build.outputs.publishable }}\`"
+            echo ""
+            echo '```'
+            cat ads.log 2>/dev/null || echo "(no log)"
+            echo '```'
+            echo ""
+            echo "### Copy review"
+            echo ""
+            cat "marketing/out/ads/${{ steps.build.outputs.date }}/review.md" 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the set
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add marketing/out
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "ads: set ${{ steps.build.outputs.date }}"
+            git push
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ads-${{ steps.build.outputs.date }}
+          path: marketing/out/ads/${{ steps.build.outputs.date }}/
+          retention-days: 30
+
+  publish:
+    needs: build
+    if: needs.build.outputs.publishable == 'true' && (github.event.inputs.publish == 'true' || github.event_name == 'schedule')
+    runs-on: ubuntu-latest
+    # Add required reviewers to this environment to gate every publish on a human click.
+    environment: ads-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: marketing/requirements.txt
+
+      - run: pip install -r marketing/requirements.txt
+
+      - name: Publish
+        env:
+          META_AD_ACCOUNT_ID: ${{ secrets.META_AD_ACCOUNT_ID }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_AD_SET_ID: ${{ secrets.META_AD_SET_ID }}
+        run: |
+          # ADS_LIVE must be the string "true" in repo variables, or this stays a dry run.
+          if [ "${{ vars.ADS_LIVE }}" = "true" ]; then
+            python3 marketing/scripts/publish_ads.py --date ${{ needs.build.outputs.date }} --live
+          else
+            echo "ADS_LIVE is not 'true' - dry run only."
+            python3 marketing/scripts/publish_ads.py --date ${{ needs.build.outputs.date }}
+          fi

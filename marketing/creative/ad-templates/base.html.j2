@@ -1,0 +1,60 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family:'PMD Display'; src:url('{{ font_dir }}/Poppins-SemiBold.woff2') format('woff2'); font-weight:600; font-display:block; }
+  @font-face { font-family:'PMD Body';    src:url('{{ font_dir }}/Inter-Regular.woff2')   format('woff2'); font-weight:400; font-display:block; }
+  :root{
+    --orange:{{ p.orange }}; --orange-deep:{{ p.orange_deep }};
+    --blue:{{ p.blue }}; --blue-bright:{{ p.blue_bright }};
+    --ink:{{ p.ink }}; --white:#fff; --slate:{{ p.slate }};
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:{{ w }}px;height:{{ h }}px;overflow:hidden}
+  body{
+    background:var(--ink); color:var(--white);
+    font-family:'PMD Body','Liberation Sans','DejaVu Sans',Arial,sans-serif;
+    display:flex; flex-direction:column;
+    padding:{{ pad }}px;
+  }
+  .display{font-family:'PMD Display','Liberation Sans','DejaVu Sans',Arial,sans-serif;font-weight:600}
+  /* 4px signature rule, top edge, full bleed */
+  .rule{position:absolute;top:0;left:0;right:0;height:{{ (h/180)|round|int }}px;
+        background:linear-gradient(135deg,var(--orange) 0%,var(--orange) 44%,#A67A55 60%,var(--blue) 76%,var(--blue) 100%)}
+  .top{display:flex;align-items:center;gap:{{ (w/54)|round|int }}px}
+  .logo{width:{{ logo }}px;height:{{ logo }}px;flex:0 0 auto}
+  .kicker{font-size:{{ kicker_px }}px;letter-spacing:{{ (kicker_px*0.09)|round(1) }}px;
+          text-transform:uppercase;color:var(--orange);font-weight:600}
+  .mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:{{ (h/28)|round|int }}px 0}
+  .headline{font-size:{{ head_px }}px;line-height:1.14;letter-spacing:-{{ (head_px*0.018)|round(1) }}px;
+            max-width:{{ (w*0.96)|round|int }}px}
+  .headline em{font-style:normal;color:var(--orange)}
+  .support{margin-top:{{ (h/34)|round|int }}px;font-size:{{ body_px }}px;line-height:1.42;
+           color:#D6D6DC;max-width:{{ (w*0.9)|round|int }}px}
+  .bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:{{ (w/30)|round|int }}px}
+  .footnote{font-size:{{ foot_px }}px;line-height:1.4;color:var(--slate);max-width:{{ (w*0.62)|round|int }}px}
+  .cta{background:var(--orange);color:var(--ink);font-weight:600;
+       font-size:{{ cta_px }}px;padding:{{ (cta_px*0.62)|round|int }}px {{ (cta_px*1.15)|round|int }}px;
+       border-radius:{{ (cta_px*0.42)|round|int }}px;white-space:nowrap}
+  /* proof is never orange - brand/print-my-design.md */
+  .proof{border-left:{{ (w/135)|round|int }}px solid var(--blue-bright);
+         padding-left:{{ (w/34)|round|int }}px}
+  .quote .headline{font-size:{{ (head_px*0.94)|round|int }}px}
+  .quote .headline:before{content:'\201C';color:var(--orange)}
+  .quote .headline:after{content:'\201D';color:var(--orange)}
+  .deadline .footnote{color:var(--orange-deep);font-weight:600}
+</style>
+<div class="rule"></div>
+<div class="top">
+  <img class="logo" src="{{ logo_src }}" alt="">
+  <div class="kicker">{{ kicker }}</div>
+</div>
+<div class="mid {{ template }}">
+  <div class="{{ 'proof' if template == 'receipt' else '' }}">
+    <div class="headline display">{{ headline_html }}</div>
+    {% if support %}<div class="support">{{ support }}</div>{% endif %}
+  </div>
+</div>
+<div class="bottom">
+  <div class="footnote">{{ footer }}</div>
+  {% if cta %}<div class="cta display">{{ cta }}</div>{% endif %}
+</div>

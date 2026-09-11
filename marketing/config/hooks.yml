@@ -1,0 +1,301 @@
+# Print My Design — hook library
+#
+# Five families, lifted as *technique* from the hook carousels and rewritten for a print shop.
+# The generator picks a family from the day's calendar slot, then a pattern, then fills the
+# slots from the day's product and offer. Every `fill` below is original copy written for
+# Print My Design; none of it is transcribed from any other brand's advertising.
+#
+# Slot vocabulary used by the generator:
+#   {product} {price} {qty} {turnaround} {audience} {city} {deadline} {url}
+#
+# `ladder` maps the hook onto the value ladder in strategy/value-ladder.md:
+#   purpose | story | identity | proof | scarcity
+# The daily set is required to cover at least three different ladder rungs so that the feed
+# never becomes all-scarcity, which is the fastest way to burn an audience.
+
+version: 1
+
+families:
+
+  storytelling:
+    intent: >
+      Earn the second line by starting mid-scene. The reader should feel they walked in on
+      something already happening. Best for cold audiences who have never heard of us.
+    ladder_bias: [story, identity]
+    best_for: [meta_feed, meta_reels, email_subject, youtube_short]
+    patterns:
+      - id: story-wish-known
+        template: "I wish someone had told me this before I ordered {qty} {product}."
+        fills:
+          - "I wish someone had told me this before I ordered 500 business cards."
+          - "I wish someone had told me this before I ordered my first banner."
+        ladder: story
+      - id: story-love-hate
+        template: "I love {thing}. I hate {problem}. Here is what we changed."
+        fills:
+          - "I love a good business card. I hate paying for 500 to find out the blue is wrong. So we print one first, free."
+          - "I love trade show season. I hate banners that arrive creased. So ours ship rolled, in a tube, always."
+        ladder: purpose
+      - id: story-n-days
+        template: "We {action} for {n} days. Here is what happened."
+        fills:
+          - "We reprinted every job a customer called 'close enough' for 30 days. Nineteen of them. All nineteen were a colour profile nobody had checked."
+          - "We tracked every rush order for 60 days. The ones that went wrong were never the printing. They were the file."
+        ladder: proof
+      - id: story-from-zero
+        template: "Starting from zero? Here is exactly what I would print first."
+        fills:
+          - "Opening a shop next month with nothing printed yet? Order in this sequence: cards, then a window decal, then a menu. Not the other way round."
+          - "First market stall and no print budget? One banner and 100 cards. Skip the flyers until you know what people ask you."
+        ladder: purpose
+      - id: story-small-to-big
+        template: "Here is how {audience} turned {small} into {big}."
+        fills:
+          - "A market stall turned one $18 banner into a queue that went around the building. The banner just said what she sold, in letters you could read from the road."
+          - "A two-person cleaning company turned 200 door hangers into a route that is now booked out. Two hundred. Not twenty thousand."
+        ladder: proof
+      - id: story-tested-n
+        template: "We tested {n} {things}. Only these worked."
+        fills:
+          - "We tested nine card stocks with real customers. Three got picked up and turned over. The other six got put down."
+          - "We tested every finish we sell on the same design. Matte won on readability. Soft-touch won on 'can I keep this'."
+        ladder: proof
+      - id: story-customer-scene
+        template: "{audience} walked in with {artifact}. Walked out with {outcome}."
+        fills:
+          - "She walked in with a logo drawn on the back of a receipt. She walked out with 250 cards and a window decal that matched."
+          - "He brought a phone photo of his old sign, faded to nothing. We matched the original colour from the unfaded edge."
+        ladder: identity
+      - id: story-mistake
+        template: "The most expensive {product} mistake we see, and it costs nothing to avoid."
+        fills:
+          - "The most expensive business card mistake we see: art built at screen resolution. It looks perfect until it is 3.5 inches wide in someone's hand."
+          - "The most expensive banner mistake we see: text inside the hem. Two inches disappear into the pole pocket and nobody checks."
+        ladder: purpose
+
+  controversy:
+    intent: >
+      Take a real position the category avoids, then justify it in the body. Never manufacture
+      outrage and never name a competitor. The position has to be one we would defend on a
+      phone call.
+    ladder_bias: [purpose, identity]
+    best_for: [meta_feed, linkedin, email_subject, blog]
+    patterns:
+      - id: contro-not-complicated
+        template: "{topic} is not complicated. People make it complicated."
+        fills:
+          - "Print is not complicated. Ink, stock, size, deadline. Everything else is someone selling you an upgrade."
+          - "Branding is not complicated for a shop with twelve customers. A readable sign and a card you are not embarrassed to hand over."
+        ladder: purpose
+      - id: contro-dont-lack
+        template: "You do not lack {trait}. You are doing {action} wrong."
+        fills:
+          - "You do not lack design talent. You are printing at the wrong size and blaming the design."
+          - "You do not lack customers. You have a sign nobody can read from a moving car."
+        ladder: identity
+      - id: contro-dont-need-daily
+        template: "You do not need to {common action} every {period}."
+        fills:
+          - "You do not need new flyers every month. You need the same flyer in a place people actually stand still."
+          - "You do not need to rebrand every year. You need one version of your logo that prints properly."
+        ladder: purpose
+      - id: contro-popular-method
+        template: "{popular method} may be what is stopping your first {result}."
+        fills:
+          - "Ordering the thinnest stock on the list may be what is stopping your first repeat customer. Thin card reads as temporary, and people treat temporary businesses as temporary."
+          - "Designing it yourself at the last minute may be what is stopping your first good print. Not the printer."
+        ladder: purpose
+      - id: contro-why-not-working
+        template: "Your {thing} is not working. Here is why."
+        fills:
+          - "Your flyer is not working. It leads with your business name. Nobody is looking for your business name; they are looking for the thing you do."
+          - "Your window decal is not working. It is at eye level for someone standing still, and everyone walking past is moving."
+        ladder: purpose
+      - id: contro-want-negative
+        template: "Want {negative outcome}? Keep doing {action}."
+        fills:
+          - "Want a box of 500 cards you will never hand out? Approve the proof on your phone, at night, without zooming in."
+          - "Want your banner to fade by August? Print it on indoor vinyl because it saved eleven dollars."
+        ladder: scarcity
+      - id: contro-dont-need-trait
+        template: "You do not need {trait} to get {result}."
+        fills:
+          - "You do not need a designer to get a card that looks designed. You need margins, one typeface, and something to be the biggest thing on it."
+          - "You do not need a big budget to look established. You need consistency across three items instead of novelty across ten."
+        ladder: identity
+      - id: contro-biggest-lie
+        template: "The biggest lie about {niche} is {belief}."
+        fills:
+          - "The biggest lie in print is that more colours look more expensive. One colour and good paper outperform four colours on thin stock every single time."
+          - "The biggest lie in small business marketing is that print is dead. It is not dead. It is just harder to fake."
+        ladder: purpose
+
+  curiosity:
+    intent: >
+      Open a loop the reader cannot close without the next line. The loop must be honestly
+      closed in the body - a hook that promises a number and never gives it is the fastest way
+      to train an audience to scroll past us.
+    ladder_bias: [story, proof]
+    best_for: [meta_reels, youtube_short, email_subject, tiktok]
+    patterns:
+      - id: curio-teaches-more
+        template: "This {content type} teaches more than {comparison}."
+        fills:
+          - "This two-minute proof check catches more errors than a second designer would."
+          - "This one page of a print file tells you more about a business than its website."
+        ladder: proof
+      - id: curio-give-me-seconds
+        template: "Give me {n} seconds. I will show you {skill}."
+        fills:
+          - "Give me 40 seconds. I will show you how to tell good card stock from bad with your eyes closed."
+          - "Give me 60 seconds. I will show you why your logo goes muddy when it gets small, and the one fix."
+        ladder: story
+      - id: curio-years-in-seconds
+        template: "{n} years of {niche} lessons in {duration}."
+        fills:
+          - "Everything a print shop learns about colour, in the time it takes to make coffee."
+          - "Nine years of watching files fail, condensed into four things to check before you hit send."
+        ladder: proof
+      - id: curio-everyone-says
+        template: "Everyone says {advice}. Nobody shows you how."
+        fills:
+          - "Everyone says 'use high resolution'. Nobody tells you 300 dpi at what size, which is the only part that matters."
+          - "Everyone says 'stay on brand'. Nobody shows you what that means when your logo has to fit on a pen."
+        ladder: purpose
+      - id: curio-successful-differently
+        template: "{successful group} do this differently."
+        fills:
+          - "Shops that get repeat customers order one item at a time, and reorder it. Shops that do not order ten things once."
+          - "The businesses whose print always looks right keep one file, named properly, and send that same file every time."
+        ladder: identity
+      - id: curio-beginner-to-expert
+        template: "Go from {start} to {end} in {n} steps."
+        fills:
+          - "Go from a logo on your phone to 250 cards in your hand in four steps. The longest one is choosing the paper."
+          - "Go from nothing printed to a full shopfront in five orders, in the order that actually pays for itself."
+        ladder: purpose
+      - id: curio-nobody-expected
+        template: "We checked {thing}. The result was not what we expected."
+        fills:
+          - "We asked customers which card they would keep. It was not the thickest one, and it was not the shiniest."
+          - "We tracked which flyers got picked up at the same market. The winner had the fewest words on it."
+        ladder: proof
+      - id: curio-overlooking
+        template: "You are probably overlooking these {n} things on your {product}."
+        fills:
+          - "Three things nearly every business card gets wrong, and all three are free to fix."
+          - "Two things on a banner nobody checks until it is hanging up and too late."
+        ladder: purpose
+
+  authority:
+    intent: >
+      Trade on what we can actually receipt: presses we run, jobs we have printed, checks we
+      do. Every authority claim must map to something a customer could verify or a number we
+      can produce. This is the only family where a specific measurable claim is required.
+    ladder_bias: [proof, identity]
+    best_for: [meta_feed, google_search, linkedin, email_subject]
+    patterns:
+      - id: auth-one-change
+        template: "One change could improve your {result} dramatically."
+        fills:
+          - "One change makes a cheap card feel expensive: pick a heavier stock and drop a colour. Same budget, completely different object."
+          - "One change fixes most muddy logos: give it a version with no thin lines, for anything under two inches."
+        ladder: identity
+      - id: auth-x-minute-habit
+        template: "This {n}-minute habit can change your {outcome}."
+        fills:
+          - "A two-minute habit that has saved our customers more reprints than anything else: print one page at home, at final size, and hold it."
+          - "A five-minute habit before every order: read your own copy out loud. Typos survive reading; they do not survive speaking."
+        ladder: proof
+      - id: auth-one-factor
+        template: "This one factor decides most of your {outcome}."
+        fills:
+          - "One factor decides how your print looks more than design does: the stock. Everything else is adjustable after."
+          - "One factor decides whether a sign works: whether it can be read at the speed people pass it."
+        ladder: purpose
+      - id: auth-habit-killing
+        template: "This habit may be quietly costing you {result}."
+        fills:
+          - "Approving proofs on a phone screen is quietly costing small businesses reprints. The screen adds contrast your paper will not."
+          - "Saving your logo once, as a screenshot, is quietly costing you every print you will ever order."
+        ladder: purpose
+      - id: auth-cheap-look-expensive
+        template: "Here is how we make {cheap thing} look expensive."
+        fills:
+          - "Here is how a {price} card ends up feeling like a {price_high} one: uncoated heavy stock, one ink, and more empty space than feels comfortable."
+          - "Here is how a plain flyer outperforms a glossy one: one message, big, with a margin nobody was brave enough to leave."
+        ladder: identity
+      - id: auth-60-seconds
+        template: "Give me 60 seconds and I will show you {secret}."
+        fills:
+          - "Sixty seconds on why your file looks sharp on screen and soft in print, and the one number that predicts it."
+          - "Sixty seconds on the difference between the two blues, and why yours keeps coming out purple."
+        ladder: proof
+      - id: auth-measurable
+        template: "This could get you {measurable result}."
+        fills:
+          - "A proof check before print has cut reorder-for-error jobs to almost nothing on our floor. It costs you two minutes."
+          - "{qty} {product} for {price}, on your desk in {turnaround}. That is the whole offer; there is no second page."
+        ladder: proof
+      - id: auth-remember-before
+        template: "Remember this before your next {action}."
+        fills:
+          - "Before your next print run: whatever is biggest on the page is what people will remember. Make sure it is the right thing."
+          - "Before your next order: check the bleed. It is the single most common reason a job comes back with a white sliver down one edge."
+        ladder: purpose
+
+  relatability:
+    intent: >
+      Name the reader's exact situation in their words before offering anything. Highest
+      performer on warm audiences and retargeting, weakest on cold traffic.
+    ladder_bias: [identity, scarcity]
+    best_for: [meta_feed, retargeting, email_subject, sms]
+    patterns:
+      - id: relate-struggling
+        template: "Struggling with {problem}? Read this."
+        fills:
+          - "Sending files back and forth three times before anything prints? There is a way to stop that on the first order."
+          - "Got a logo that looks fine on screen and wrong on paper every time? It is almost always one setting."
+        ladder: purpose
+      - id: relate-closer-than
+        template: "You are closer to {result} than you think if you notice this."
+        fills:
+          - "You are one readable sign away from people knowing what you sell. Most shops are."
+          - "You are closer to looking established than you think. It is three matching items, not a rebrand."
+        ladder: identity
+      - id: relate-skip-and-ruin
+        template: "Skip this and you may ruin your {outcome}."
+        fills:
+          - "Skip the paper proof and you may find out about the colour shift after 500 of them are boxed."
+          - "Skip the size check and your banner will be beautiful and two feet too wide for the wall."
+        ladder: scarcity
+      - id: relate-stop-excuse
+        template: "Stop using {common excuse}."
+        fills:
+          - "Stop saying you will sort the printing once the website is done. The website has been nearly done for seven months."
+          - "Stop saying you are not a designer. You are not being asked to be one; you are being asked to pick a size."
+        ladder: identity
+      - id: relate-want-outcome
+        template: "Want {desired outcome}? Start doing {action}."
+        fills:
+          - "Want people to keep your card instead of pocketing it? Put one useful thing on the back."
+          - "Want to stop explaining what you do? Put it on the window in six words."
+        ladder: purpose
+      - id: relate-dont-forget
+        template: "Whatever you do, do not forget {tactic}."
+        fills:
+          - "Whatever you print this month, do not forget the thing people actually stand in front of: the door."
+          - "Whatever you order for the market, do not forget something to give people who are not buying today."
+        ladder: identity
+      - id: relate-popular-or-true
+        template: "Do you want {popular desire} or {true desire}?"
+        fills:
+          - "Do you want a card people compliment, or a card people keep? They are not the same card."
+          - "Do you want the lowest line on the quote, or the one you will not have to apologise for? Both are legitimate answers; pick on purpose."
+        ladder: identity
+      - id: relate-deadline
+        template: "{deadline} is closer than it looks for {audience}."
+        fills:
+          - "If you need it for the weekend, today is the day the file has to land, not tomorrow."
+          - "Market season starts sooner than the calendar suggests. The banner takes a day; deciding what it says takes a week."
+        ladder: scarcity

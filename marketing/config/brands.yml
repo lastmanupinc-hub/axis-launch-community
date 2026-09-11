@@ -1,0 +1,83 @@
+# Brand and destination config for every asset this system generates.
+#
+# NOTE ON SITE URLS: the CI/dev network used to build this could not reach jonathanarvay.com
+# or printmydesign.jonathanarvay.com (blocked by the environment's egress policy), so the
+# site structure below is declared here rather than discovered by crawling. Correct any path
+# that does not match the live site; every script reads these values and nothing hardcodes a
+# URL.
+
+version: 1
+
+brands:
+
+  print_my_design:
+    name: "Print My Design"
+    short: "PMD"
+    site: "https://printmydesign.jonathanarvay.com"
+    logo: "marketing/brand/logo/print-my-design-mark.svg"
+    logo_mono: "marketing/brand/logo/print-my-design-mark-mono.svg"
+    palette: "marketing/brand/palette.json"
+    voice: "marketing/brand/print-my-design.md"
+    from_name: "Print My Design"
+    from_email: "hello@printmydesign.jonathanarvay.com"
+    reply_to: "hello@printmydesign.jonathanarvay.com"
+    postal_address_env: "PMD_POSTAL_ADDRESS"   # CAN-SPAM requires a real postal address.
+    paths:
+      shop: "/shop"
+      products: "/products"
+      quote: "/quote"
+      proof: "/proof"
+      blog: "/blog"
+      contact: "/contact"
+    primary_cta:
+      label: "Start your order"
+      path: "/quote"
+
+  axis_launch:
+    name: "AXIS Launch"
+    short: "AXIS"
+    site: "https://jonathanarvay.com"
+    from_name: "AXIS Launch"
+    from_email: "hello@jonathanarvay.com"
+    reply_to: "hello@jonathanarvay.com"
+    postal_address_env: "AXIS_POSTAL_ADDRESS"
+    paths:
+      community: "/community"
+      listings: "/listings"
+      about: "/about"
+      guidelines: "/legal/community-guidelines"
+      blog: "/blog"
+    primary_cta:
+      label: "Read the thread"
+      path: "/community"
+
+# Every outbound link in a newsletter or ad gets tagged. The generator refuses to emit an
+# untagged link so that attribution never depends on someone remembering.
+utm:
+  newsletter:
+    source: "newsletter"
+    medium: "email"
+    campaign_template: "daily-{date}"      # daily-2026-09-12
+    content_template: "{section}-{slug}"
+  ads:
+    source: "{platform}"                   # meta | google | tiktok
+    medium: "cpc"
+    campaign_template: "pmd-daily-{date}"
+    content_template: "{hook_family}-{ladder}-{variant}"
+
+# Hard limits enforced by scripts/build_ads.py and build_newsletter.py.
+limits:
+  newsletter:
+    max_sections: 6
+    max_items_per_section: 4
+    subject_max_chars: 62          # truncation point in most mobile clients
+    preheader_max_chars: 100
+  ads:
+    variants_per_day: 6
+    max_scarcity_share: 0.33
+    min_proof_share: 0.20
+    meta_primary_text_max: 125     # before the "See more" fold
+    meta_headline_max: 40
+    meta_description_max: 30
+    google_headline_max: 30
+    google_description_max: 90

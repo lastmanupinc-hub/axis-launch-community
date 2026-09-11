@@ -1,0 +1,4 @@
+# Pinned so a CI run in six months builds the same issue as today.
+Jinja2==3.1.4
+PyYAML==6.0.2
+requests==2.32.3

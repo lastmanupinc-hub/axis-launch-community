@@ -1,0 +1,36 @@
+{{ brand.name|upper }}
+{{ issue.date_long }} | {{ issue.slot_label }}{% if issue.number %} | No. {{ issue.number }}{% endif %}
+
+{{ issue.headline }}
+{{ '=' * issue.headline|length }}
+{% if issue.standfirst %}
+{{ issue.standfirst }}
+{% endif %}{% if lead_item %}
+Read the full piece: {{ lead_item.url }}
+{% endif %}
+{% for section in sections %}
+--- {{ section.title|upper }} ---
+{% if section.blurb %}{{ section.blurb }}
+{% endif %}{% for item in section.entries %}
+* {{ item.title }}
+  {% if item.summary %}{{ item.summary }}
+  {% endif %}{{ item.url }}
+{% endfor %}{% endfor %}
+{% if offer %}
+--- THIS WEEK ---
+
+{{ offer.phrase }}
+{{ offer.exclusions_line }}{% if offer.ends_long %} Ends {{ offer.ends_long }}.{% endif %}{% if offer.stacking %} {{ offer.stacking }}.{% endif %}
+
+{{ offer.cta }}: {{ offer.url }}
+{% endif %}
+{% if ps %}
+P.S. {{ ps }}
+{% endif %}
+--
+You are receiving this because you signed up at {{ brand.site_display }}{% if consent_note %} ({{ consent_note }}){% endif %}.
+{{ postal_address }}
+
+Unsubscribe: {{ unsubscribe_url }}
+Email preferences: {{ preferences_url }}
+{% if web_url %}View in browser: {{ web_url }}{% endif %}

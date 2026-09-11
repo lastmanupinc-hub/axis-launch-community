@@ -1,0 +1,90 @@
+# Where the daily newsletter gets its material.
+#
+# Every source is optional and independently failable: if one is unreachable the issue is
+# built from the rest and the failure is recorded in the issue's build report rather than
+# taking the whole send down. A source that returns nothing is normal, not an error.
+
+version: 1
+
+sources:
+
+  # ---- Seeded content: the GitHub Discussions in this repo -------------------
+  community_discussions:
+    type: github_discussions
+    enabled: true
+    owner: "lastmanupinc-hub"
+    repo: "axis-launch-community"
+    brand: axis_launch
+    # Categories map to the six DISCUSSION_TEMPLATE forms already in .github/
+    categories:
+      - { slug: "show-tell",            label: "Show & Tell",            weight: 3 }
+      - { slug: "find-a-co-founder",    label: "Find a Co-founder",      weight: 2 }
+      - { slug: "auditors-security",    label: "Auditors & Security",    weight: 2 }
+      - { slug: "m-a-exit-readiness",   label: "M&A & Exit Readiness",   weight: 2 }
+      - { slug: "investors-fundraising",label: "Investors & Fundraising",weight: 1 }
+      - { slug: "platform-q-a",         label: "Platform Q&A",           weight: 1 }
+    lookback_hours: 48
+    max_items: 8
+    min_body_chars: 120          # skip one-line threads; they do not carry a newsletter slot
+    auth_env: "GITHUB_TOKEN"
+    # Show & Tell threads regularly become listings, per the repo README, so they get the
+    # heaviest weight and are the default source for Thursday's cross-brand slot.
+
+  # ---- Our own sites --------------------------------------------------------
+  axis_site:
+    type: sitemap
+    enabled: true
+    brand: axis_launch
+    url: "https://jonathanarvay.com/sitemap.xml"
+    include_paths: ["/community", "/listings", "/blog"]
+    lookback_hours: 168
+    max_items: 6
+
+  axis_blog_feed:
+    type: rss
+    enabled: true
+    brand: axis_launch
+    url: "https://jonathanarvay.com/blog/rss.xml"
+    lookback_hours: 168
+    max_items: 4
+
+  pmd_site:
+    type: sitemap
+    enabled: true
+    brand: print_my_design
+    url: "https://printmydesign.jonathanarvay.com/sitemap.xml"
+    include_paths: ["/blog", "/products"]
+    lookback_hours: 168
+    max_items: 6
+
+  pmd_blog_feed:
+    type: rss
+    enabled: true
+    brand: print_my_design
+    url: "https://printmydesign.jonathanarvay.com/blog/rss.xml"
+    lookback_hours: 168
+    max_items: 4
+
+  # ---- Editorial: things a human puts in by hand ----------------------------
+  manual_queue:
+    type: file_queue
+    enabled: true
+    brand: both
+    path: "marketing/queue"
+    # Drop a .md file in marketing/queue/ with front matter and it appears in the next issue,
+    # then moves to marketing/queue/published/. This is the escape hatch for anything the
+    # automated sources cannot see - a print job worth showing, a customer win, an
+    # announcement. Front matter: title, brand, url, date, section, ladder.
+
+# Deduplication across issues: an item that appeared in a recent issue is not repeated.
+dedupe:
+  history_file: "marketing/out/.published-index.json"
+  lookback_issues: 30
+  key: "url"
+
+# Network behaviour for every HTTP source.
+http:
+  timeout_seconds: 20
+  retries: 3
+  backoff_seconds: [2, 4, 8]
+  user_agent: "print-my-design-newsletter/1.0 (+https://printmydesign.jonathanarvay.com)"

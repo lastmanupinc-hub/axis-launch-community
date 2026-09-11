@@ -1,0 +1,282 @@
+# Print My Design - product and offer catalogue.
+#
+# !! VERIFY BEFORE FIRST LIVE SEND !!
+# printmydesign.jonathanarvay.com was unreachable from the environment this was built in
+# (blocked by the egress policy), so the catalogue below is a schema-correct placeholder shaped
+# from the category, not scraped from the live shop. Every price, turnaround and SKU needs
+# replacing with real values. `scripts/build_ads.py --check` reports anything still flagged
+# `verified: false` and the daily workflow refuses to publish live while any product in the
+# day's set is unverified. Proofing and dry runs work fine either way.
+
+version: 1
+
+defaults:
+  currency: USD
+  verified: false          # flip to true per product once checked against the live shop
+
+products:
+
+  business_cards:
+    name: "Business cards"
+    short: "Business cards"
+    keywords: ["business card", "card stock", "cards", "card"]
+    slug: "business-cards"
+    path: "/products/business-cards"
+    role: acquisition        # the anchor product; leads cold traffic
+    qty_anchor: 250
+    price_from: 24.00
+    turnaround: "3 business days"
+    margin_band: low
+    image_style: [product_on_white, in_hand, stack_macro]
+    talking_points:
+      - "Heavier stock changes how it is handled, more than any finish does."
+      - "One ink on good paper beats four colours on thin paper."
+      - "The back is free real estate and almost nobody uses it."
+
+  flyers:
+    name: "Flyers and leaflets"
+    short: "Flyers"
+    keywords: ["flyer", "leaflet", "handout"]
+    slug: "flyers"
+    path: "/products/flyers"
+    role: volume
+    qty_anchor: 500
+    price_from: 39.00
+    turnaround: "3 business days"
+    margin_band: low
+    image_style: [product_on_white, lifestyle_in_context]
+    talking_points:
+      - "One message, large, beats five messages set small."
+      - "Where it is placed outperforms what is on it."
+
+  banners:
+    name: "Banners"
+    short: "Banners"
+    keywords: ["banner", "pole pocket", "vinyl"]
+    slug: "banners"
+    path: "/products/banners"
+    role: growth
+    qty_anchor: 1
+    price_from: 48.00
+    turnaround: "2 business days"
+    margin_band: high
+    image_style: [lifestyle_in_context, install_shot, before_after]
+    talking_points:
+      - "Ships rolled in a tube. Creases do not come out of vinyl."
+      - "Keep text clear of the pole pocket; two inches vanish into the hem."
+      - "Outdoor vinyl or it fades by August."
+
+  signage:
+    name: "Signs and window decals"
+    short: "Signs"
+    keywords: ["sign", "signage", "window decal", "decal", "shopfront", "storefront"]
+    slug: "signage"
+    path: "/products/signage"
+    role: growth
+    qty_anchor: 1
+    price_from: 65.00
+    turnaround: "4 business days"
+    margin_band: high
+    image_style: [install_shot, before_after, lifestyle_in_context]
+    talking_points:
+      - "Readable at the speed people pass it, or it is decoration."
+      - "Eye level for someone walking is not eye level for someone standing."
+
+  stickers:
+    name: "Stickers and labels"
+    short: "Stickers"
+    keywords: ["sticker", "label", "die-cut", "die cut"]
+    slug: "stickers"
+    path: "/products/stickers"
+    role: growth
+    qty_anchor: 100
+    price_from: 29.00
+    turnaround: "3 business days"
+    margin_band: high
+    image_style: [product_on_white, stack_macro, lifestyle_in_context]
+    talking_points:
+      - "A label turns a homemade thing into a product."
+      - "Die-cut costs less than people assume and reads as far more expensive."
+
+  apparel:
+    name: "Printed and embroidered apparel"
+    short: "Apparel"
+    keywords: ["apparel", "shirt", "tee", "t-shirt", "embroidery", "embroidered", "staff shirt"]
+    slug: "apparel"
+    path: "/products/apparel"
+    role: growth
+    qty_anchor: 12
+    price_from: 18.00
+    turnaround: "6 business days"
+    margin_band: high
+    image_style: [worn_in_context, product_on_white, detail_macro]
+    talking_points:
+      - "Embroidery survives washing. Print on dark cotton usually does not."
+      - "Staff shirts are the cheapest signage a shop owns."
+
+  packaging:
+    name: "Boxes, bags and packaging"
+    short: "Packaging"
+    keywords: ["packaging", "box", "boxes", "bag", "bags", "unboxing"]
+    slug: "packaging"
+    path: "/products/packaging"
+    role: growth
+    qty_anchor: 50
+    price_from: 72.00
+    turnaround: "7 business days"
+    margin_band: high
+    image_style: [unboxing, product_on_white, lifestyle_in_context]
+    talking_points:
+      - "Packaging is the only advertising the customer pays to take home."
+
+  invitations:
+    name: "Invitations and event stationery"
+    short: "Invitations"
+    keywords: ["invitation", "invite", "wedding", "stationery"]
+    slug: "invitations"
+    path: "/products/invitations"
+    role: seasonal
+    season: [may, june, july]
+    qty_anchor: 50
+    price_from: 44.00
+    turnaround: "4 business days"
+    margin_band: medium
+    image_style: [flat_lay, detail_macro, in_hand]
+    talking_points:
+      - "Paper weight is the whole impression, before a word is read."
+
+  holiday_cards:
+    name: "Holiday cards"
+    short: "Holiday cards"
+    keywords: ["holiday card", "christmas card", "posted card"]
+    slug: "holiday-cards"
+    path: "/products/holiday-cards"
+    role: seasonal
+    season: [october, november, december]
+    qty_anchor: 50
+    price_from: 38.00
+    turnaround: "4 business days"
+    margin_band: medium
+    image_style: [flat_lay, in_hand, lifestyle_in_context]
+    talking_points:
+      - "A posted card from a business is rare enough now to be remembered."
+
+  sample_kit:
+    name: "Free sample kit"
+    short: "Sample kit"
+    keywords: ["sample kit", "sample", "swatch"]
+    slug: "sample-kit"
+    path: "/sample-kit"
+    role: lead_magnet         # top of funnel; the strongest proof asset a printer has
+    qty_anchor: 1
+    price_from: 0.00
+    turnaround: "posted within 2 business days"
+    margin_band: none
+    image_style: [flat_lay, in_hand, unboxing]
+    talking_points:
+      - "You cannot argue with paper someone is already holding."
+      - "Every stock we sell, in one envelope, free, no order required."
+
+# ---------------------------------------------------------------------------
+# Offers. Every record needs exclusions, starts, ends and evidence.
+# An offer with `ends: null` can never be rendered with urgency language -
+# guards.check_urgency() rejects it. An offer with a non-empty `exclusions` list
+# can never appear under an absolute claim ("everything", "sitewide").
+# ---------------------------------------------------------------------------
+
+offers:
+
+  first_order:
+    label: "first order"
+    phrase: "15% off your first order"
+    kind: percent
+    value: 15
+    applies_to: [business_cards, flyers, banners, signage, stickers, apparel, packaging]
+    exclusions: ["sample kits", "delivery", "taxes", "design services"]
+    minimum: null
+    starts: "2026-01-01"
+    ends: null                    # always-on: no urgency language permitted
+    evidence: "always_on_acquisition"
+    always_on: true
+
+  email_signup:
+    label: "email signup"
+    phrase: "10% off when you join the list"
+    kind: percent
+    value: 10                     # deliberately below first_order - two-step ladder
+    applies_to: [business_cards, flyers, stickers]
+    exclusions: ["sample kits", "delivery", "taxes"]
+    minimum: null
+    starts: "2026-01-01"
+    ends: null
+    evidence: "always_on_acquisition"
+    always_on: true
+
+  free_shipping:
+    label: "free delivery"
+    phrase: "free delivery over $75"
+    kind: shipping
+    threshold: 75.00
+    calculated: "after discounts"
+    applies_to: [business_cards, flyers, banners, signage, stickers, apparel, packaging, invitations, holiday_cards]
+    exclusions: ["oversized freight items"]
+    starts: "2026-01-01"
+    ends: null
+    evidence: "always_on_acquisition"
+    always_on: true
+
+  spend_ladder:
+    label: "spend and save"
+    phrase: "up to $110 off larger orders"
+    kind: tiered_flat
+    tiers:
+      - { over: 80.00,  off: 12.00 }
+      - { over: 250.00, off: 40.00 }
+      - { over: 500.00, off: 110.00 }   # top tier is the aggressive one, by design
+    applies_to: [business_cards, flyers, banners, signage, stickers, apparel, packaging]
+    exclusions: ["sample kits", "delivery", "taxes", "design services"]
+    starts: "2026-01-01"
+    ends: null
+    evidence: "always_on_acquisition"
+    always_on: true
+    stacking: "one promotion code per order; the ladder does not stack with a percentage code"
+
+# Dated, seasonal offers. These MAY carry urgency because they carry a real end date.
+seasonal_offers:
+
+  autumn_signage:
+    label: "autumn signage"
+    phrase: "20% off signage and banners"
+    kind: percent
+    value: 20
+    applies_to: [signage, banners]
+    exclusions: ["installation", "delivery", "taxes"]
+    starts: "2026-09-01"
+    ends: "2026-10-31"
+    evidence: "press_schedule_autumn"
+
+  holiday_card_early:
+    label: "early holiday cards"
+    phrase: "25% off holiday cards ordered early"
+    kind: percent
+    value: 25
+    applies_to: [holiday_cards]
+    exclusions: ["envelopes printed separately", "delivery", "taxes"]
+    starts: "2026-09-15"
+    ends: "2026-11-15"
+    evidence: "postal_deadline_december"
+
+# Evidence records. guards.check_urgency() resolves an offer's `evidence` key here and
+# requires a real, dated, checkable basis for any scarcity claim.
+evidence:
+  always_on_acquisition:
+    type: no_deadline
+    note: "Always-on. Urgency language is forbidden against this record."
+  press_schedule_autumn:
+    type: press_cutoff
+    note: "Large-format press runs Tue and Thu; last autumn slot before the Q4 changeover."
+    verify: "Confirm against the production schedule before each send that cites it."
+  postal_deadline_december:
+    type: external_calendar
+    note: "National last-posting dates for December delivery."
+    verify: "Republished annually by the postal service; re-check every September."

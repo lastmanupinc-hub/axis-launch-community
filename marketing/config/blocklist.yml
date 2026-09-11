@@ -1,0 +1,100 @@
+# Terms that must never appear in generated copy.
+#
+# Enforced by scripts/lib/guards.py against every headline, body, subject line, preheader,
+# alt text and filename the system produces. Matching is case-insensitive and
+# whitespace-normalised, so "Vista Print" and "vistaprint" both trip.
+#
+# This list exists so that "follow the cadence, do not copy the creative" is a build failure
+# rather than a good intention.
+
+version: 1
+
+# Competitor brand and product names. Never in paid creative, never in a subject line.
+competitor_brands:
+  - vistaprint
+  - vista print
+  - cimpress
+  - moo
+  - moo.com
+  - 99designs
+  - shutterfly
+  - zazzle
+  - overnight prints
+  - gotprint
+  - printful
+  - printify
+  - staples print
+  - office depot print
+  - fedex office
+  - solopress
+  - instantprint
+  - printed.com
+
+# Campaign names, platform names and slogans belonging to other companies.
+competitor_campaigns:
+  - print your possible
+  - own the now
+  - unregiftable
+  - ready for anything
+  - meaning and moment
+  - magnify micro business
+  - everything you create matters
+  - endless print abilities
+  - print your brand on everything
+
+# Absolute discount language. Blocked in subject lines and ad headlines unless the offer
+# record carries an explicitly empty `exclusions` list. See strategy/compliance.md section 2.
+absolute_claims:
+  - everything
+  - storewide
+  - store-wide
+  - sitewide
+  - site-wide
+  - all products
+  - no exclusions
+  - everything must go
+  - absolutely everything
+
+# Urgency language. Permitted only on an asset whose offer resolves to a dated evidence
+# record. See strategy/compliance.md section 3.
+urgency_terms:
+  - ends tonight
+  - ends today
+  - last chance
+  - final hours
+  - hurry
+  - don't miss out
+  - dont miss out
+  - act now
+  - limited time
+  - while stocks last
+  - only hours left
+  - ending soon
+  - today only
+
+# Claims we cannot receipt. Blocked outright; there is no offer record that unlocks these.
+unsupportable_claims:
+  - cheapest
+  - lowest price anywhere
+  - unbeatable
+  - guaranteed lowest
+  - best in the world
+  - number one printer
+  - "#1 printer"
+  - fastest in the industry
+  - instant delivery
+  - risk free
+  - 100% guaranteed
+
+# Tone terms. Not illegal, just off-brand per brand/print-my-design.md. Warn, do not fail.
+discouraged_tone:
+  - elevate your brand
+  - take it to the next level
+  - game changer
+  - game-changer
+  - revolutionary
+  - cutting edge
+  - world class
+  - synergy
+  - unlock the power
+  - supercharge

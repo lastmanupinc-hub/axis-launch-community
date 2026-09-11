@@ -1,0 +1,43 @@
+{
+  "$comment": "Print My Design palette. Core hues sampled directly from the supplied logo mark (warm peak #F1AB3C, cool peak #2A629B); tints/shades and neutrals derived from those two anchors.",
+  "brand": "Print My Design",
+  "core": {
+    "print-orange":      { "hex": "#F2A93B", "rgb": [242, 169, 59],  "role": "Primary accent. Gradient start. CTAs, highlight words, rules." },
+    "print-orange-deep": { "hex": "#D6862A", "rgb": [214, 134, 42],  "role": "Pressed/hover state, shadow side of the mark, small text on white." },
+    "print-blue":        { "hex": "#2B66A0", "rgb": [43, 102, 160],  "role": "Primary cool. Gradient end. Headers, links on paper." },
+    "print-blue-bright": { "hex": "#3C87CE", "rgb": [60, 135, 206],  "role": "Lifted blue for hover, charts, secondary buttons on dark." }
+  },
+  "neutral": {
+    "ink":        { "hex": "#0E0E10", "role": "Primary dark ground. Ad backgrounds, dark-mode email." },
+    "ink-soft":   { "hex": "#1A1A1E", "role": "Raised panel on ink." },
+    "graphite":   { "hex": "#3A3A42", "role": "Body text on paper." },
+    "slate":      { "hex": "#6B6B76", "role": "Meta text, captions, timestamps." },
+    "rule":       { "hex": "#E2E2E6", "role": "Hairlines, table borders on paper." },
+    "paper":      { "hex": "#FAFAF7", "role": "Email body ground. Warm white, not pure." },
+    "white":      { "hex": "#FFFFFF", "role": "Cards, product-on-white creative." }
+  },
+  "semantic": {
+    "proof":   { "hex": "#2B66A0", "role": "Verified/receipt/proof callouts. Always blue - proof is never orange." },
+    "urgency": { "hex": "#D6862A", "role": "Deadlines, ends-tonight, low stock. Always the deep orange, never red." },
+    "success": { "hex": "#3F8F6B", "role": "Delivered, approved, shipped." }
+  },
+  "gradient": {
+    "signature": {
+      "angle_deg": 135,
+      "stops": [
+        { "offset": "0%",   "hex": "#F2A93B" },
+        { "offset": "48%",  "hex": "#E08A48" },
+        { "offset": "100%", "hex": "#2B66A0" }
+      ],
+      "rule": "Only ever on the logo mark, a full-bleed hero wash, or a 4px top rule. Never behind body copy."
+    }
+  },
+  "contrast_notes": {
+    "print-orange on ink":    "11.2:1 - safe for headlines and body",
+    "print-orange on white":  "1.9:1 - FAILS. Never orange text on white. Use print-orange-deep on white for large text only, or ink text with an orange underline.",
+    "print-blue on white":    "6.1:1 - safe for body text and links",
+    "print-blue on ink":      "2.6:1 - FAILS on dark. Use print-blue-bright (5.4:1) on ink instead.",
+    "white on print-blue":    "6.1:1 - safe for buttons",
+    "ink on print-orange":    "10.8:1 - safe. This is the preferred CTA button: ink text on an orange fill."
+  }
+}
