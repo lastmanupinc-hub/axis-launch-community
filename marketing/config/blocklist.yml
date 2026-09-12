@@ -86,6 +86,30 @@ unsupportable_claims:
   - risk free
   - 100% guaranteed
 
+# AXIS Launch's own lexicon avoid-list, from axis-launch-platform/brand-guidelines.md.
+# Adopted verbatim so this system cannot emit copy the platform's own brand standard
+# forbids. Note "AI-powered" is on it as a *selling* word: on AXIS Launch every app is
+# AI-built, so it says nothing.
+axis_lexicon_avoid:
+  - revolutionary
+  - game-changing
+  - 10x
+  - ai-powered
+  - guaranteed
+
+# Claims AXIS Launch prohibits outright (content-constraints.md, policy-pack.md):
+# no equity or securities language, no valuation guarantees, no forward-looking revenue.
+axis_prohibited:
+  - equity offering
+  - stock offering
+  - shares in
+  - guaranteed return
+  - guaranteed valuation
+  - worth $
+  - projected revenue
+  - will be worth
+  - once-in-a-lifetime
+
 # Tone terms. Not illegal, just off-brand per brand/print-my-design.md. Warn, do not fail.
 discouraged_tone:
   - elevate your brand

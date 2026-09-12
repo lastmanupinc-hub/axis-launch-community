@@ -1,7 +1,7 @@
 ---
 title: "Show & Tell: a file checker that catches bleed errors before you order"
 brand: axis_launch
-url: "https://github.com/lastmanupinc-hub/axis-launch-community/discussions/1"
+url: "https://jonathanarvay.com/community/show-and-tell-to-listing-pipeline"
 date: 2026-09-10
 section: community
 ladder: story

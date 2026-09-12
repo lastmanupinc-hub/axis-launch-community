@@ -1,187 +1,166 @@
 # Print My Design - product and offer catalogue.
 #
-# !! VERIFY BEFORE FIRST LIVE SEND !!
-# printmydesign.jonathanarvay.com was unreachable from the environment this was built in
-# (blocked by the egress policy), so the catalogue below is a schema-correct placeholder shaped
-# from the category, not scraped from the live shop. Every price, turnaround and SKU needs
-# replacing with real values. `scripts/build_ads.py --check` reports anything still flagged
-# `verified: false` and the daily workflow refuses to publish live while any product in the
-# day's set is unverified. Proofing and dry runs work fine either way.
+# SOURCE OF TRUTH: PMD-MASTER, plugins/pmd-customizer/ui/src/catalog/productCatalog.ts
+# These are the six products the storefront actually renders today, with their real slugs,
+# prices, quantity tiers and option axes. They replace an earlier placeholder catalogue that
+# invented products (banners, signage, apparel, packaging, holiday cards, a sample kit) which
+# the shop does not sell.
+#
+# TWO THINGS TO UNDERSTAND BEFORE ADVERTISING A PRICE
+#
+# 1. These prices are hardcoded UI literals, not computed. The server's real pricing rule is
+#    max(marketReference, vendorCost x 1.06) in core/pricing/MarketPricingService.ts, and it
+#    currently throws for every variant because no cost samples exist. Nothing checks that
+#    $19.99 clears vendor cost plus margin. `price_basis: ui_placeholder` records that.
+# 2. The storefront's quantity tiers are rendered but not priced as tiers - the shopper store
+#    multiplies a unit price linearly, which the repo's own usePriceQuote.ts calls out as
+#    wrong ("Gelato's US business-card table runs about 35.9c a unit at 50 and 10.9c at 500").
+#    So do not advertise a per-unit price at a quantity, and do not imply a volume discount.
+#
+# Until a product's price is reconciled against a real vendor quote, leave verified: false.
+# build_ads.py --check reports them and publish_ads.py refuses to go live.
 
 version: 1
 
 defaults:
   currency: USD
-  verified: false          # flip to true per product once checked against the live shop
+  verified: false
+  price_basis: ui_placeholder     # ui_placeholder | vendor_quoted
+  path_template: "/products/{slug}"
 
 products:
 
   business_cards:
-    name: "Business cards"
+    name: "Business Cards"
     short: "Business cards"
-    keywords: ["business card", "card stock", "cards", "card"]
     slug: "business-cards"
     path: "/products/business-cards"
-    role: acquisition        # the anchor product; leads cold traffic
-    qty_anchor: 250
-    price_from: 24.00
-    turnaround: "3 business days"
-    margin_band: low
-    image_style: [product_on_white, in_hand, stack_macro]
+    role: acquisition
+    qty_anchor: 50                 # lowest real tier, the one startingPrice refers to
+    qty_tiers: [50, 100, 250, 500, 1000, 2500, 5000]
+    price_from: 19.99
+    turnaround: null               # see launch-readiness.yml: nothing ships yet
+    margin_band: unknown
+    keywords: ["business card", "card stock", "cards", "card"]
+    sizes: ["3.5x2 in", "2.5x2.5 in square", "Euro 3.346x2.165 in"]
+    stocks: ["Standard Matte 14pt", "Premium Matte 16pt", "Glossy 14pt",
+             "Kraft Brown 18pt", "Cotton 32pt", "Silk Laminate 16pt"]
+    finishes: ["No finish", "Matte coating", "Gloss UV", "Soft touch", "Spot UV", "Gold foil"]
+    image_style: [in_hand, stack_macro, product_on_white]
     talking_points:
-      - "Heavier stock changes how it is handled, more than any finish does."
-      - "One ink on good paper beats four colours on thin paper."
+      - "Six stocks, from a standard 14pt matte to a 32pt cotton."
+      - "Heavier stock changes how a card is handled more than any finish does."
       - "The back is free real estate and almost nobody uses it."
 
+  postcards:
+    name: "Postcards"
+    short: "Postcards"
+    slug: "postcards"
+    path: "/products/postcards"
+    role: volume
+    qty_anchor: 25
+    qty_tiers: [25, 50, 100, 250, 500, 1000]
+    price_from: 29.99
+    turnaround: null
+    margin_band: unknown
+    keywords: ["postcard", "direct mail", "mailer"]
+    image_style: [flat_lay, in_hand, product_on_white]
+    talking_points:
+      - "Full colour on thick card stock, for direct mail and event invites."
+      - "The message people read is the one they do not have to open."
+
   flyers:
-    name: "Flyers and leaflets"
+    name: "Flyers & Brochures"
     short: "Flyers"
-    keywords: ["flyer", "leaflet", "handout"]
     slug: "flyers"
     path: "/products/flyers"
     role: volume
-    qty_anchor: 500
-    price_from: 39.00
-    turnaround: "3 business days"
-    margin_band: low
-    image_style: [product_on_white, lifestyle_in_context]
+    qty_anchor: 25
+    qty_tiers: [25, 50, 100, 250, 500, 1000]
+    price_from: 39.99
+    turnaround: null
+    margin_band: unknown
+    keywords: ["flyer", "brochure", "leaflet", "handout"]
+    image_style: [product_on_white, lifestyle_in_context, flat_lay]
     talking_points:
+      - "Single or double sided, for handouts, displays and events."
       - "One message, large, beats five messages set small."
-      - "Where it is placed outperforms what is on it."
-
-  banners:
-    name: "Banners"
-    short: "Banners"
-    keywords: ["banner", "pole pocket", "vinyl"]
-    slug: "banners"
-    path: "/products/banners"
-    role: growth
-    qty_anchor: 1
-    price_from: 48.00
-    turnaround: "2 business days"
-    margin_band: high
-    image_style: [lifestyle_in_context, install_shot, before_after]
-    talking_points:
-      - "Ships rolled in a tube. Creases do not come out of vinyl."
-      - "Keep text clear of the pole pocket; two inches vanish into the hem."
-      - "Outdoor vinyl or it fades by August."
-
-  signage:
-    name: "Signs and window decals"
-    short: "Signs"
-    keywords: ["sign", "signage", "window decal", "decal", "shopfront", "storefront"]
-    slug: "signage"
-    path: "/products/signage"
-    role: growth
-    qty_anchor: 1
-    price_from: 65.00
-    turnaround: "4 business days"
-    margin_band: high
-    image_style: [install_shot, before_after, lifestyle_in_context]
-    talking_points:
-      - "Readable at the speed people pass it, or it is decoration."
-      - "Eye level for someone walking is not eye level for someone standing."
 
   stickers:
-    name: "Stickers and labels"
+    name: "Stickers & Labels"
     short: "Stickers"
-    keywords: ["sticker", "label", "die-cut", "die cut"]
     slug: "stickers"
     path: "/products/stickers"
     role: growth
-    qty_anchor: 100
-    price_from: 29.00
-    turnaround: "3 business days"
-    margin_band: high
-    image_style: [product_on_white, stack_macro, lifestyle_in_context]
-    talking_points:
-      - "A label turns a homemade thing into a product."
-      - "Die-cut costs less than people assume and reads as far more expensive."
-
-  apparel:
-    name: "Printed and embroidered apparel"
-    short: "Apparel"
-    keywords: ["apparel", "shirt", "tee", "t-shirt", "embroidery", "embroidered", "staff shirt"]
-    slug: "apparel"
-    path: "/products/apparel"
-    role: growth
-    qty_anchor: 12
-    price_from: 18.00
-    turnaround: "6 business days"
-    margin_band: high
-    image_style: [worn_in_context, product_on_white, detail_macro]
-    talking_points:
-      - "Embroidery survives washing. Print on dark cotton usually does not."
-      - "Staff shirts are the cheapest signage a shop owns."
-
-  packaging:
-    name: "Boxes, bags and packaging"
-    short: "Packaging"
-    keywords: ["packaging", "box", "boxes", "bag", "bags", "unboxing"]
-    slug: "packaging"
-    path: "/products/packaging"
-    role: growth
     qty_anchor: 50
-    price_from: 72.00
-    turnaround: "7 business days"
-    margin_band: high
-    image_style: [unboxing, product_on_white, lifestyle_in_context]
+    qty_tiers: [50, 100, 250, 500, 1000, 2500]
+    price_from: 24.99
+    turnaround: null
+    margin_band: unknown
+    keywords: ["sticker", "label", "die-cut", "die cut", "kiss-cut", "vinyl"]
+    stocks: ["Glossy vinyl", "Matte vinyl", "Paper", "Holographic"]
+    image_style: [detail_macro, product_on_white, lifestyle_in_context]
     talking_points:
-      - "Packaging is the only advertising the customer pays to take home."
+      - "Die-cut or kiss-cut, on durable vinyl or paper. Waterproof options."
+      - "A label turns a homemade thing into a product."
+
+  posters:
+    name: "Posters"
+    short: "Posters"
+    slug: "posters"
+    path: "/products/posters"
+    role: growth
+    qty_anchor: 1
+    qty_tiers: [1, 5, 10, 25, 50, 100]
+    price_from: 14.99
+    turnaround: null
+    margin_band: unknown
+    keywords: ["poster", "large format", "wall art", "display"]
+    sizes: ["18x24 in", "24x36 in", "12x18 in"]
+    stocks: ["Matte paper 100lb", "Glossy paper 100lb", "Canvas"]
+    image_style: [install_shot, lifestyle_in_context, product_on_white]
+    talking_points:
+      - "Large format for events, retail displays and wall art."
+      - "Readable at the distance people actually stand."
 
   invitations:
-    name: "Invitations and event stationery"
+    name: "Invitations"
     short: "Invitations"
-    keywords: ["invitation", "invite", "wedding", "stationery"]
     slug: "invitations"
     path: "/products/invitations"
     role: seasonal
     season: [may, june, july]
-    qty_anchor: 50
-    price_from: 44.00
-    turnaround: "4 business days"
-    margin_band: medium
+    qty_anchor: 25
+    qty_tiers: [25, 50, 100, 150, 200]
+    price_from: 49.99
+    turnaround: null
+    margin_band: unknown
+    keywords: ["invitation", "invite", "wedding", "stationery"]
     image_style: [flat_lay, detail_macro, in_hand]
     talking_points:
+      - "Weddings, parties and corporate events, with optional envelope printing."
       - "Paper weight is the whole impression, before a word is read."
 
-  holiday_cards:
-    name: "Holiday cards"
-    short: "Holiday cards"
-    keywords: ["holiday card", "christmas card", "posted card"]
-    slug: "holiday-cards"
-    path: "/products/holiday-cards"
-    role: seasonal
-    season: [october, november, december]
-    qty_anchor: 50
-    price_from: 38.00
-    turnaround: "4 business days"
-    margin_band: medium
-    image_style: [flat_lay, in_hand, lifestyle_in_context]
-    talking_points:
-      - "A posted card from a business is rare enough now to be remembered."
-
+# Products the category rewards but PMD does not sell yet. Listed so the gap is visible and
+# so nobody re-invents them into the live catalogue by accident. The ad generator ignores
+# this block entirely.
+not_built:
   sample_kit:
-    name: "Free sample kit"
-    short: "Sample kit"
-    keywords: ["sample kit", "sample", "swatch"]
-    slug: "sample-kit"
-    path: "/sample-kit"
-    role: lead_magnet         # top of funnel; the strongest proof asset a printer has
-    qty_anchor: 1
-    price_from: 0.00
-    turnaround: "posted within 2 business days"
-    margin_band: none
-    image_style: [flat_lay, in_hand, unboxing]
-    talking_points:
-      - "You cannot argue with paper someone is already holding."
-      - "Every stock we sell, in one envelope, free, no order required."
+    note: >
+      A free physical sample kit is the strongest top-of-funnel mechanic in this category
+      (see strategy/cadence.md) and PMD has no equivalent. It is also the only one that
+      works before checkout does, because it asks for an address rather than a card.
+      Worth building first.
+  banners:
+    note: >
+      A banner print specification is seeded in migration 042 and a vendor prepress profile
+      exists, but there is no storefront product, so nothing can be advertised.
+  apparel_packaging:
+    note: "Not in the catalogue, not in the print specifications. Do not advertise."
 
 # ---------------------------------------------------------------------------
 # Offers. Every record needs exclusions, starts, ends and evidence.
-# An offer with `ends: null` can never be rendered with urgency language -
-# guards.check_urgency() rejects it. An offer with a non-empty `exclusions` list
-# can never appear under an absolute claim ("everything", "sitewide").
+# NOTE: these are inert until checkout can take money. See launch-readiness.yml.
 # ---------------------------------------------------------------------------
 
 offers:
@@ -191,11 +170,11 @@ offers:
     phrase: "15% off your first order"
     kind: percent
     value: 15
-    applies_to: [business_cards, flyers, banners, signage, stickers, apparel, packaging]
-    exclusions: ["sample kits", "delivery", "taxes", "design services"]
+    applies_to: [business_cards, postcards, flyers, stickers, posters, invitations]
+    exclusions: ["delivery", "taxes"]
     minimum: null
     starts: "2026-01-01"
-    ends: null                    # always-on: no urgency language permitted
+    ends: null
     evidence: "always_on_acquisition"
     always_on: true
 
@@ -203,9 +182,9 @@ offers:
     label: "email signup"
     phrase: "10% off when you join the list"
     kind: percent
-    value: 10                     # deliberately below first_order - two-step ladder
-    applies_to: [business_cards, flyers, stickers]
-    exclusions: ["sample kits", "delivery", "taxes"]
+    value: 10
+    applies_to: [business_cards, postcards, stickers]
+    exclusions: ["delivery", "taxes"]
     minimum: null
     starts: "2026-01-01"
     ends: null
@@ -218,8 +197,8 @@ offers:
     kind: shipping
     threshold: 75.00
     calculated: "after discounts"
-    applies_to: [business_cards, flyers, banners, signage, stickers, apparel, packaging, invitations, holiday_cards]
-    exclusions: ["oversized freight items"]
+    applies_to: [business_cards, postcards, flyers, stickers, posters, invitations]
+    exclusions: ["oversized items"]
     starts: "2026-01-01"
     ends: null
     evidence: "always_on_acquisition"
@@ -232,50 +211,48 @@ offers:
     tiers:
       - { over: 80.00,  off: 12.00 }
       - { over: 250.00, off: 40.00 }
-      - { over: 500.00, off: 110.00 }   # top tier is the aggressive one, by design
-    applies_to: [business_cards, flyers, banners, signage, stickers, apparel, packaging]
-    exclusions: ["sample kits", "delivery", "taxes", "design services"]
+      - { over: 500.00, off: 110.00 }
+    applies_to: [business_cards, postcards, flyers, stickers, posters, invitations]
+    exclusions: ["delivery", "taxes"]
     starts: "2026-01-01"
     ends: null
     evidence: "always_on_acquisition"
     always_on: true
-    stacking: "one promotion code per order; the ladder does not stack with a percentage code"
+    stacking: "one promotion code per order"
 
 # Dated, seasonal offers. These MAY carry urgency because they carry a real end date.
 seasonal_offers:
 
-  autumn_signage:
-    label: "autumn signage"
-    phrase: "20% off signage and banners"
+  autumn_posters:
+    label: "autumn posters"
+    phrase: "20% off posters"
     kind: percent
     value: 20
-    applies_to: [signage, banners]
-    exclusions: ["installation", "delivery", "taxes"]
+    applies_to: [posters]
+    exclusions: ["delivery", "taxes"]
     starts: "2026-09-01"
     ends: "2026-10-31"
     evidence: "press_schedule_autumn"
 
-  holiday_card_early:
-    label: "early holiday cards"
-    phrase: "25% off holiday cards ordered early"
+  early_invitations:
+    label: "early invitations"
+    phrase: "25% off invitations ordered early"
     kind: percent
     value: 25
-    applies_to: [holiday_cards]
-    exclusions: ["envelopes printed separately", "delivery", "taxes"]
+    applies_to: [invitations]
+    exclusions: ["envelope printing", "delivery", "taxes"]
     starts: "2026-09-15"
     ends: "2026-11-15"
     evidence: "postal_deadline_december"
 
-# Evidence records. guards.check_urgency() resolves an offer's `evidence` key here and
-# requires a real, dated, checkable basis for any scarcity claim.
 evidence:
   always_on_acquisition:
     type: no_deadline
     note: "Always-on. Urgency language is forbidden against this record."
   press_schedule_autumn:
     type: press_cutoff
-    note: "Large-format press runs Tue and Thu; last autumn slot before the Q4 changeover."
-    verify: "Confirm against the production schedule before each send that cites it."
+    note: "Placeholder. PMD has no press schedule of its own - it allocates to vendors."
+    verify: "Replace with a real vendor production cutoff before any send cites it."
   postal_deadline_december:
     type: external_calendar
     note: "National last-posting dates for December delivery."

@@ -1,10 +1,9 @@
 # Brand and destination config for every asset this system generates.
 #
-# NOTE ON SITE URLS: the CI/dev network used to build this could not reach jonathanarvay.com
-# or printmydesign.jonathanarvay.com (blocked by the environment's egress policy), so the
-# site structure below is declared here rather than discovered by crawling. Correct any path
-# that does not match the live site; every script reads these values and nothing hardcodes a
-# URL.
+# SITE URLS: taken from source, not guessed. The AXIS Launch paths below come from
+# axis-launch-platform/axis-launch-site/sitemap.xml (205 URLs, base https://jonathanarvay.com).
+# The Print My Design paths come from PMD-MASTER's UI router. Both live sites were
+# unreachable from the build network, so the repos are the authority here.
 
 version: 1
 
@@ -22,34 +21,59 @@ brands:
     from_email: "hello@printmydesign.jonathanarvay.com"
     reply_to: "hello@printmydesign.jonathanarvay.com"
     postal_address_env: "PMD_POSTAL_ADDRESS"   # CAN-SPAM requires a real postal address.
+    # Real routes, from PMD-MASTER ui/src/App.tsx. There is no /shop, /quote, /blog,
+    # /contact or /sample-kit, and no sitemap or RSS feed is published.
     paths:
-      shop: "/shop"
-      products: "/products"
-      quote: "/quote"
-      proof: "/proof"
-      blog: "/blog"
-      contact: "/contact"
+      home: "/"
+      products: "/products"          # individual products at /products/{slug}
+      categories: "/categories"
+      editor: "/editor"
+      account: "/account"
+    # NOTE the wordmark on the live storefront is "PMD Print Studio", not "Print My Design",
+    # and its accent is #00BFFF rather than the supplied logo's orange-to-blue gradient.
+    # That is a real inconsistency between the site and the brand asset; see
+    # brand/print-my-design.md, "The unresolved identity question".
+    site_wordmark: "PMD Print Studio"
+    site_accent: "#00BFFF"
     primary_cta:
-      label: "Start your order"
-      path: "/quote"
+      # The storefront's own CTA, and the only ask that is true today: the editor works,
+      # checkout does not. See config/launch-readiness.yml.
+      label: "Design now"
+      path: "/editor"
 
   axis_launch:
     name: "AXIS Launch"
     short: "AXIS"
+    # brand-guidelines.md: "AXIS Launch (site title, logo, OG data - always). The domain
+    # jonathanarvay.com is the founder-story asset, not the brand."
     site: "https://jonathanarvay.com"
     from_name: "AXIS Launch"
     from_email: "hello@jonathanarvay.com"
     reply_to: "hello@jonathanarvay.com"
     postal_address_env: "AXIS_POSTAL_ADDRESS"
+    # Real paths, from the site's own sitemap. There is no /listings and no /blog:
+    # listings live at /apps/{slug} and editorial at /best/{category}.
     paths:
       community: "/community"
-      listings: "/listings"
+      apps: "/apps"
+      microapps: "/microapps"
+      auctions: "/auctions"
+      auction_rules: "/auction-rules"
+      best: "/best"
+      for_audience: "/for"
+      ma_readiness: "/ma-readiness"
+      verification: "/verification"
+      badge: "/badge"
+      how_it_works: "/how-it-works"
+      pricing: "/pricing"
+      acquire: "/acquire"
+      launch: "/launch"
       about: "/about"
-      guidelines: "/legal/community-guidelines"
-      blog: "/blog"
+      legal: "/legal"
     primary_cta:
-      label: "Read the thread"
-      path: "/community"
+      # messaging-system.yaml cta_labels. Canonical copy; do not paraphrase.
+      label: "List your app"
+      path: "/launch"
 
 # Every outbound link in a newsletter or ad gets tagged. The generator refuses to emit an
 # untagged link so that attribution never depends on someone remembering.
@@ -64,6 +88,15 @@ utm:
     medium: "cpc"
     campaign_template: "pmd-daily-{date}"
     content_template: "{hook_family}-{ladder}-{variant}"
+
+# AXIS Launch has its own UTM convention, set in axis-launch-platform/funnel-map.md:
+#   utm_source=axislaunch&utm_medium={page-type}&utm_campaign={slug}
+# Links to AXIS surfaces follow it so this system's traffic lands in the same buckets as
+# the rest of the platform's attribution rather than inventing a parallel scheme.
+utm_axis:
+  source: "axislaunch"
+  medium_template: "{page_type}"
+  campaign_template: "{slug}"
 
 # Hard limits enforced by scripts/build_ads.py and build_newsletter.py.
 limits:

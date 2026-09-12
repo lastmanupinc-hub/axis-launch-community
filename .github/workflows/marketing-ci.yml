@@ -32,6 +32,11 @@ jobs:
       - name: Calendar covers a whole year and every day builds
         run: python3 marketing/tests/test_calendar.py
 
+      - name: Builders stay inside what the product can honour
+        env:
+          PMD_POSTAL_ADDRESS: "CI placeholder, 1 Example Street, Example City"
+        run: python3 marketing/tests/test_builders.py
+
       - name: Ad set builds clean for the next 14 days
         run: python3 marketing/scripts/build_ads.py --days 14 --check
 

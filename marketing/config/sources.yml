@@ -36,15 +36,25 @@ sources:
     enabled: true
     brand: axis_launch
     url: "https://jonathanarvay.com/sitemap.xml"
-    include_paths: ["/community", "/listings", "/blog"]
+    # Real prefixes, from the site's own sitemap: 66 /apps, 61 /community, 22 /microapps,
+    # 20 /for, 20 /best. There is no /listings and no /blog.
+    include_paths: ["/apps/", "/community/", "/microapps/", "/best/", "/for/",
+                    "/ma-readiness"]
     lookback_hours: 168
     max_items: 6
+    # That sitemap carries no <lastmod> on any URL, so the lookback filter cannot tell
+    # new from old. Rather than calling a two-month-old page "new on the sites", undated
+    # entries are carried in the `archive` section and rotate: dedupe across issues means
+    # each one surfaces once, which is exactly the "updates on the seeded content" job.
+    # Set require_lastmod: true instead if you would rather skip them entirely.
+    require_lastmod: false
+    undated_section: archive
 
   axis_blog_feed:
     type: rss
-    enabled: true
+    enabled: false          # no RSS feed is published at jonathanarvay.com today
     brand: axis_launch
-    url: "https://jonathanarvay.com/blog/rss.xml"
+    url: "https://jonathanarvay.com/best/rss.xml"
     lookback_hours: 168
     max_items: 4
 
@@ -53,13 +63,14 @@ sources:
     enabled: true
     brand: print_my_design
     url: "https://printmydesign.jonathanarvay.com/sitemap.xml"
-    include_paths: ["/blog", "/products"]
+    include_paths: ["/products/", "/categories"]
     lookback_hours: 168
     max_items: 6
+    require_lastmod: true    # a product page is not news; only dated changes count
 
   pmd_blog_feed:
     type: rss
-    enabled: true
+    enabled: false          # PMD publishes no feed today; enable when one exists
     brand: print_my_design
     url: "https://printmydesign.jonathanarvay.com/blog/rss.xml"
     lookback_hours: 168

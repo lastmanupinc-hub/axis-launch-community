@@ -83,6 +83,38 @@ The voice follows from that:
 - **Price is never hidden.** If a post implies a price, the post states the price.
 - **One ask per asset.** Every ad ends on one verb.
 
+## The unresolved identity question
+
+The supplied logo and the live site do not agree, and somebody has to decide which is right.
+
+| | Supplied brand asset | Live storefront |
+|---|---|---|
+| Wordmark | PRINT / MY DESIGN | "PMD Print Studio" |
+| Accent | orange `#F2A93B` to blue `#2B66A0` gradient | flat `#00BFFF` deep sky blue |
+| Mark | rounded diamond ring with a registration window | none |
+
+The storefront's own code is also internally inconsistent: `tailwind.config.js` defines
+`pmdBlue: '#00BFFF'` while the button variants in `App.tsx` hardcode `#00A3FF`. Two blues,
+neither of them the logo's.
+
+**This system follows the supplied asset**, because that is what was handed over as the brand
+and because it is the only one of the three that is a complete identity rather than a colour.
+Everything in `palette.json` is sampled from it. But every asset this system produces will
+therefore look unlike the site it links to, which is a real inconsistency a visitor will
+notice at the click.
+
+Three ways out, in the order I would take them:
+
+1. Bring the site to the logo. One accent token and a wordmark swap; the smallest change that
+   makes the two agree.
+2. Bring the logo to the site. Recolour the mark to `#00BFFF` and keep "PMD Print Studio".
+   Cheap, but it discards the gradient that makes the mark distinctive.
+3. Decide they are different brands — "PMD Print Studio" the product, "Print My Design" the
+   company. Defensible, and it needs saying out loud, because right now it reads as an
+   accident rather than a decision.
+
+Until it is resolved, the ad creative and the landing page will not match.
+
 ## What we never do
 
 Carried straight into `strategy/compliance.md`, repeated here because it is a brand rule too:

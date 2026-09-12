@@ -51,6 +51,7 @@ jobs:
         run: |
           python3 marketing/tests/test_guards.py
           python3 marketing/tests/test_sources.py
+          python3 marketing/tests/test_config.py
 
       - name: Build issue
         id: build

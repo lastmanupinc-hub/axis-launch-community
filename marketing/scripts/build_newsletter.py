@@ -34,6 +34,7 @@ BRAND = "print_my_design"          # the sending brand; AXIS content rides along
 SECTION_TITLES = {
     "community": "From the community",
     "writing": "New on the sites",
+    "archive": "From the archive",
     "proof": "Off the press",
     "product": "From the shop",
     "editorial": "Also this week",
@@ -74,9 +75,9 @@ def group_sections(items: list[sources.Item], plan: planner.DayPlan) -> list[dic
         buckets.setdefault(key, []).append(item)
 
     # Thursday leads with the community; every other day leads with our own writing.
-    order = (["community", "writing", "proof", "product", "editorial"]
+    order = (["community", "writing", "proof", "product", "archive", "editorial"]
              if plan.slot.get("cross_brand")
-             else ["proof", "writing", "community", "product", "editorial"])
+             else ["proof", "writing", "community", "product", "archive", "editorial"])
 
     sections: list[dict] = []
     for key in order:
@@ -126,6 +127,10 @@ def compose_subject(plan: planner.DayPlan, headline: str, offer: dict | None) ->
 
 def build_offer_block(plan: planner.DayPlan, date: dt.date) -> dict | None:
     if not plan.offer:
+        return None
+    if not config.capabilities(BRAND).get("can_transact"):
+        # Same rule the ad builder applies: no checkout, no offer. Rendering a discount
+        # nobody can redeem is worse than rendering nothing.
         return None
     offer = dict(plan.offer)
     ends = offer.get("ends")

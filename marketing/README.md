@@ -28,6 +28,8 @@ a set of compliance guards that are enforced in code.
 | You want to | Read |
 |---|---|
 | Know why the calendar looks like it does | [`strategy/cadence.md`](strategy/cadence.md) |
+| Know why the daily send is Print My Design, not AXIS Launch | [`strategy/newsletter-cadence.md`](strategy/newsletter-cadence.md) |
+| Know what the product can and cannot honour | [`config/launch-readiness.yml`](config/launch-readiness.yml) |
 | Know what we are and are not allowed to say | [`strategy/compliance.md`](strategy/compliance.md) |
 | Understand the tone system | [`strategy/value-ladder.md`](strategy/value-ladder.md) |
 | Write or edit a hook | [`config/hooks.yml`](config/hooks.yml) |
@@ -66,7 +68,7 @@ for t in guards sources config calendar; do python3 marketing/tests/test_$t.py; 
 |---|---|---|
 | `daily-newsletter.yml` | 11:12 UTC daily | Builds the issue, commits the archive, uploads an artifact, then dispatches via the `newsletter-send` environment. |
 | `daily-ads.yml` | 12:07 UTC daily | Builds the ad set, renders creative at three ratios, commits both, then offers them via the `ads-publish` environment. |
-| `marketing-ci.yml` | every PR | Runs all 82 tests plus a 14-day ad build and an offline newsletter build. |
+| `marketing-ci.yml` | every PR | Runs all 112 tests plus a 14-day ad build and an offline newsletter build. |
 
 ### Two independent safety switches
 
@@ -100,23 +102,55 @@ Repository **variables**:
 | `ASSET_BASE_URL` | brand site `/email-assets` | Where the email images are hosted. Email cannot render SVG, so the PNGs in `brand/logo/png/` need to live at a public URL. |
 | `UNSUBSCRIBE_URL`, `PREFERENCES_URL` | brand site paths | Real endpoints, not placeholders |
 
-## Before the first live send
+## Before anything goes live
 
-These are the things this build could not do for you, in the order they matter.
+The catalogue and the site paths are now read from source, not guessed:
+`config/products.yml` holds the six products the storefront actually renders, and
+`config/brands.yml` holds the real routes for both sites. What remains is not configuration.
 
-1. **Verify the catalogue.** `config/products.yml` is schema-correct but its prices, quantities
-   and turnarounds are placeholders — the shop was unreachable from the environment this was
-   built in. Every product carries `verified: false`, and `publish_ads.py` refuses to publish
-   while any product in the day's set is unverified. Fix the numbers, flip the flags.
-2. **Check the site paths.** `config/brands.yml` declares the URL structure of both sites
-   rather than having discovered it. Correct anything that does not match.
-3. **Set `PMD_POSTAL_ADDRESS`** to a real address. Nothing sends without it, by design.
-4. **Point `ASSET_BASE_URL`** at wherever you host `brand/logo/png/email-header@2x.png`.
-5. **Vendor the brand fonts** into `brand/fonts/` as `.woff2`. Without them the creative
-   renderer falls back to a system sans and says so; that is fine for proofing and not fine
-   for anything live.
-6. **Confirm the consent posture** for any non-US subscriber, and get a lawyer's eye on any
-   guarantee you plan to advertise. `strategy/compliance.md` §7 says why.
+### Two blockers that no setting can work around
+
+1. **Print My Design cannot take money.** Checkout exposes estimate, coupon-validation and
+   finalize. Finalize creates an order and returns totals; there is no payment intent, no
+   capture, no webhook, and no `core/ecommerce/payments/` at all. Every order placed today is
+   free. `guards.check_can_spend()` therefore blocks all paid advertising, and
+   `publish_ads.py` refuses. Flip `can_transact` in `config/launch-readiness.yml` when that
+   is actually true — not before.
+2. **There is no email capture on the site.** No newsletter route, no signup endpoint, no
+   list. `guards.check_can_send()` blocks the dispatch. The daily build still runs and still
+   commits the archive; it just has nobody to send to. See
+   `strategy/newsletter-cadence.md`.
+
+Nothing can ship either — the renderer throws by design and no vendor order adapter exists —
+which is why every product's `turnaround` is null and every delivery phrase is a build
+failure.
+
+### Then, in order
+
+3. **Reconcile the six prices.** They are hardcoded UI literals
+   (`price_basis: ui_placeholder`), never checked against the server's own rule of
+   `max(marketReference, vendorCost x 1.06)`. Nothing guarantees $19.99 clears cost plus
+   margin. Flip `has_price_confidence` once a real vendor quote backs each one.
+4. **Fix the two false claims on the live storefront.** It advertises "Ships in 3-5 days" and
+   a "100% satisfaction guarantee" while nothing can ship and no money is taken. Both are
+   recorded in `config/launch-readiness.yml` under `site_claims_to_correct`. This system will
+   not repeat them, but it also cannot fix the page.
+5. **Settle the brand.** The supplied logo and the live site disagree on wordmark and colour.
+   See `brand/print-my-design.md`, "The unresolved identity question".
+6. **Set `PMD_POSTAL_ADDRESS`** to a real address. Nothing sends without it, by design.
+7. **Point `ASSET_BASE_URL`** at wherever you host `brand/logo/png/email-header@2x.png`.
+8. **Vendor the brand fonts** into `brand/fonts/` as `.woff2`. Without them the creative
+   renderer falls back to a system sans and says so; fine for proofing, not for anything live.
+9. **Confirm the consent posture** for any non-US subscriber, and get a lawyer's eye on any
+   guarantee you plan to advertise. `strategy/compliance.md` section 7 says why.
+
+### What can run today, honestly
+
+M1 is reached: the storefront is up and the editor works. So the one true ask is "open the
+editor and make something" — no price, no deadline, no delivery. That is what the generator
+now produces, and `config/launch-readiness.yml` lists it as the permitted ask alongside the
+channels it is permitted on (organic, content, email to people who already asked). Paid
+spend is not on that list.
 
 ## Editorial rules the code enforces
 

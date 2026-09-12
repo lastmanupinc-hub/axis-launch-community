@@ -1,7 +1,7 @@
 ---
 title: "Why your logo goes muddy under two inches"
 brand: print_my_design
-url: "https://printmydesign.jonathanarvay.com/blog/small-logo-fix"
+url: "https://printmydesign.jonathanarvay.com/products/stickers"
 date: 2026-09-09
 section: writing
 ladder: purpose

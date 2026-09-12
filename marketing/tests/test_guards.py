@@ -50,7 +50,7 @@ def test_competitor_campaign_name_is_blocked():
 
 
 def test_clean_copy_passes():
-    assert guards.check_competitor_terms("250 cards, on your desk Thursday") == []
+    assert guards.check_competitor_terms("250 cards on a 32pt cotton stock") == []
 
 
 def test_unsupportable_superlative_fails():
@@ -203,10 +203,19 @@ def test_check_copy_aggregates_every_rule():
 
 def test_report_collects_and_reports_ok():
     r = guards.GuardReport()
-    r.extend(guards.check_copy("250 cards, on your desk Thursday", offer=None, today=TODAY))
-    assert r.ok
+    r.extend(guards.check_copy("Six paper stocks, from 14pt matte to 32pt cotton",
+                               offer=None, today=TODAY))
+    assert r.ok, r.summary()
     r.extend(guards.check_copy("Cheapest anywhere", offer=None, today=TODAY))
     assert not r.ok
+
+
+def test_a_delivery_promise_is_caught_through_check_copy():
+    """"250 cards, on your desk Thursday" was fine as copy until the audit established
+    that nothing can ship. The readiness gate now catches it wherever it appears."""
+    v = guards.check_copy("250 cards, on your desk Thursday", offer=None, today=TODAY,
+                          where="ad")
+    assert any(x.rule.startswith("not-yet-true:can_fulfil") for x in v), [str(x) for x in v]
 # --- absolute claims must be number-proximate (regression) -------------------
 
 def test_absolute_word_without_a_discount_figure_is_prose_not_a_claim():
@@ -235,6 +244,46 @@ def test_absolute_word_with_the_word_off_is_caught():
 def test_discount_signal_in_a_different_sentence_does_not_trip():
     assert guards.check_offer_claim(
         "20% off signage. Everything else we print stays at list price.", ALWAYS_ON) == []
+
+
+# --- AXIS Launch lexicon and prohibitions (axis-launch-platform) --------------
+
+def test_axis_lexicon_fails_on_axis_copy():
+    v = guards.check_lexicon("A revolutionary way to list your app", "axis_launch")
+    assert "axis-lexicon" in rules(v)
+    assert v[0].severity == "fail"
+
+
+def test_axis_lexicon_only_warns_on_print_my_design_copy():
+    v = guards.check_lexicon("Our AI-powered editor", "print_my_design")
+    assert [x.severity for x in v] == ["warn"]
+
+
+def test_prohibited_claims_fail_for_every_brand():
+    for brand in ("axis_launch", "print_my_design", ""):
+        v = guards.check_lexicon("Guaranteed return on your listing", brand)
+        assert "prohibited-claim" in rules(v), brand
+
+
+def test_valuation_language_is_prohibited():
+    v = guards.check_lexicon("This app will be worth far more next year", "axis_launch")
+    assert "prohibited-claim" in rules(v)
+
+
+def test_securities_language_is_prohibited():
+    v = guards.check_lexicon("Buy shares in the next big AI app", "axis_launch")
+    assert "prohibited-claim" in rules(v)
+
+
+def test_clean_axis_copy_passes():
+    assert guards.check_lexicon(
+        "List your app. Build revenue history M&A buyers trust.", "axis_launch") == []
+
+
+def test_check_copy_passes_brand_through():
+    v = guards.check_copy("A revolutionary listing", offer=None, today=TODAY,
+                          brand_key="axis_launch", where="t")
+    assert "axis-lexicon" in rules(v)
 
 
 if __name__ == "__main__":

@@ -127,10 +127,36 @@ def ladder_quota(plan: planner.DayPlan, n: int) -> list[str]:
     return rungs[:n]
 
 
+UNAVAILABLE_SLOTS_BY_CAPABILITY = {
+    "has_price_confidence": {"price", "price_high"},
+    "can_fulfil": {"turnaround", "deadline"},
+}
+
+
+def unavailable_slots() -> set[str]:
+    """Slots that cannot be filled truthfully today.
+
+    A hook needing {price} cannot run while no price has been reconciled against vendor
+    cost; one needing {turnaround} cannot run while nothing ships. Rather than fail the
+    build on an unfilled slot, those hooks are simply not candidates yet.
+    """
+    caps = config.capabilities(BRAND)
+    out: set[str] = set()
+    for capability, slots in UNAVAILABLE_SLOTS_BY_CAPABILITY.items():
+        if caps.get(capability) is not True:
+            out |= slots
+    return out
+
+
 def candidate_hooks(plan: planner.DayPlan, rung: str) -> list[tuple[str, dict, str]]:
     """(family, pattern, fill) tuples matching the day's families and this rung."""
     library = config.hooks()["families"]
     families = plan.families or list(library)
+    blocked = unavailable_slots()
+
+    def usable(fill: str) -> bool:
+        return not (set(re.findall(r"\{([a-z_]+)\}", fill)) & blocked)
+
     out: list[tuple[str, dict, str]] = []
     for family in families:
         fam = library.get(family)
@@ -140,13 +166,15 @@ def candidate_hooks(plan: planner.DayPlan, rung: str) -> list[tuple[str, dict, s
             if pattern.get("ladder") != rung:
                 continue
             for fill in pattern.get("fills", []):
-                out.append((family, pattern, fill))
+                if usable(fill):
+                    out.append((family, pattern, fill))
     if not out:      # widen to every family before giving up on the rung
         for family, fam in library.items():
             for pattern in fam["patterns"]:
                 if pattern.get("ladder") == rung:
                     for fill in pattern.get("fills", []):
-                        out.append((family, pattern, fill))
+                        if usable(fill):
+                            out.append((family, pattern, fill))
     return out
 
 
@@ -193,15 +221,19 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
     currency = config.products()["defaults"]["currency"]
     offer = offer_for_rung(plan, rung)
 
+    blocked = unavailable_slots()
     values = {
         "product": product["name"].lower(),
         "qty": product.get("qty_anchor", ""),
-        "price": C.money(product.get("price_from", 0), currency),
-        "price_high": C.money(C.round_price(product.get("price_from", 0) * 2.2), currency),
-        "turnaround": product.get("turnaround", ""),
         "audience": "small shops",
-        "deadline": (offer or {}).get("ends", ""),
     }
+    if "price" not in blocked:
+        values["price"] = C.money(product.get("price_from", 0), currency)
+        values["price_high"] = C.money(
+            C.round_price(product.get("price_from", 0) * 2.2), currency)
+    if "turnaround" not in blocked:
+        values["turnaround"] = product.get("turnaround", "")
+        values["deadline"] = (offer or {}).get("ends", "")
     hook, missing = C.fill_slots(fill, values)
 
     # Body: the hook, then one concrete talking point, then the offer clause if there is one.
@@ -227,17 +259,26 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
     # Headline: product-led and short. Never the hook, which is always too long for 40 chars.
     # The rung decides what the headline is *about*: only a price rung leads on price.
     short = product.get("short") or product["name"]
-    if offer and offer.get("kind") == "percent":
+    caps = config.capabilities(BRAND)
+    # A headline may only lean on something that is true today. With fulfilment and
+    # pricing unconfirmed, that leaves the product and its options - which is honest and
+    # still specific, because the option set is real.
+    if offer and offer.get("kind") == "percent" and caps.get("can_transact"):
         headline_raw = f"{offer['value']}% off {short.lower()}"
-    elif rung == "proof" and product.get("turnaround"):
+    elif rung == "proof" and product.get("turnaround") and caps.get("can_fulfil"):
         headline_raw = f"{short} in {compact_turnaround(product['turnaround'])}"
-    elif product.get("price_from"):
+    elif product.get("price_from") and caps.get("has_price_confidence"):
         headline_raw = f"{short} from {C.money(product['price_from'], currency)}"
+    elif product.get("stocks"):
+        headline_raw = f"{short}, {len(product['stocks'])} stocks"
+    elif product.get("sizes"):
+        headline_raw = f"{short}, {len(product['sizes'])} sizes"
     else:
-        headline_raw = short
+        headline_raw = f"Design your own {short.lower()}"
     headline = C.truncate(headline_raw, lim["meta_headline_max"])
-    description = C.truncate(product.get("turnaround", "Made to order"),
-                             lim["meta_description_max"])
+    description = C.truncate(
+        product["turnaround"] if product.get("turnaround") and caps.get("can_fulfil")
+        else "Free online editor", lim["meta_description_max"])
 
     path = product.get("path", "/")
     meta_url = C.ad_url(BRAND, path, date=plan.date.isoformat(), platform="meta",
@@ -246,11 +287,13 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
                           hook_family=family, ladder=rung, variant=index)
 
     # Google needs three short headlines and two descriptions.
+    third = (compact_turnaround(product["turnaround"])
+             if product.get("turnaround") and caps.get("can_fulfil")
+             else "Design it yourself")
     g_heads = [
         C.truncate(short, lim["google_headline_max"]),
         C.truncate(headline_raw, lim["google_headline_max"]),
-        C.truncate(compact_turnaround(product.get("turnaround", "Made to order")),
-                   lim["google_headline_max"]),
+        C.truncate(third, lim["google_headline_max"]),
     ]
     g_descs = [
         C.truncate(C.first_sentence(hook), lim["google_description_max"]),
@@ -273,7 +316,8 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
             "primary_text_prefold": C.truncate(primary_text, lim["meta_primary_text_max"]),
             "headline": headline,
             "description": description,
-            "cta": "Learn more" if rung in ("purpose", "story") else "Shop now",
+            "cta": ("Learn more" if rung in ("purpose", "story")
+                    else ("Shop now" if caps.get("can_transact") else "Try the editor")),
             "url": meta_url,
         },
         "google": {
@@ -289,7 +333,9 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
             # type down rather than cutting the line short.
             "headline": C.truncate(C.first_sentence(hook), 130),
             "kicker": product["name"],
-            "footer": offer_clause or product.get("turnaround", ""),
+            "footer": offer_clause or (product["turnaround"]
+                                   if product.get("turnaround") and caps.get("can_fulfil")
+                                   else "Free online editor"),
             "ratios": ["1:1", "4:5", "9:16"],
         },
     }
@@ -311,6 +357,10 @@ def offer_for_rung(plan: planner.DayPlan, rung: str) -> dict | None:
     an all-discount feed while every individual ad still looks fine.
     """
     if plan.is_meaning_window or not plan.offer:
+        return None
+    if not config.capabilities(BRAND).get("can_transact"):
+        # No checkout, no offer. An ad promising a discount the buyer cannot redeem is
+        # the worst kind of wasted click.
         return None
     if rung == "scarcity":
         return plan.offer

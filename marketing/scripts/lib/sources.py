@@ -264,6 +264,7 @@ def fetch_sitemap(name: str, cfg: dict) -> tuple[list[Item], SourceStatus]:
     cutoff = _cutoff(cfg.get("lookback_hours", 168))
     include = cfg.get("include_paths") or []
     items: list[Item] = []
+    undated = 0
     urls = root.findall(".//sm:url", ns) or root.findall(".//url")
     for url_el in urls:
         loc_el = url_el.find("sm:loc", ns)
@@ -280,14 +281,34 @@ def fetch_sitemap(name: str, cfg: dict) -> tuple[list[Item], SourceStatus]:
         when = _parse_dt(mod_el.text if mod_el is not None and mod_el.text else "")
         if when and when < cutoff:
             continue
+        if when is None:
+            # No <lastmod>. The lookback filter cannot apply, so this page is not
+            # evidence of anything new - the AXIS Launch sitemap has no lastmod on any
+            # of its URLs. Two honest options, set per source:
+            #   require_lastmod: true   -> skip it entirely
+            #   otherwise               -> carry it as `archive`, not `writing`, so the
+            #                              issue never calls an evergreen page "new".
+            if cfg.get("require_lastmod"):
+                undated += 1
+                continue
+            section = cfg.get("undated_section", "archive")
+        else:
+            section = "writing"
         slug = loc.rstrip("/").rsplit("/", 1)[-1].replace("-", " ").replace("_", " ")
         items.append(Item(title=slug.title() or loc, url=loc, brand=cfg.get("brand", ""),
                           source=name,
                           published=(when.date().isoformat() if when else ""),
-                          summary="", section="writing", ladder="purpose"))
-    items.sort(key=lambda i: i.published, reverse=True)
+                          summary="", section=section, ladder="purpose"))
+    # Newest first; undated archive pages rotate in a stable order behind them, and
+    # cross-issue dedupe is what stops the same page appearing twice.
+    items.sort(key=lambda i: (i.published or "", i.url), reverse=True)
     items = items[: cfg.get("max_items", 6)]
-    return items, SourceStatus(name, True, len(items), f"{len(urls)} urls scanned")
+    detail = f"{len(urls)} urls scanned"
+    if undated:
+        detail += f"; {undated} skipped as undated (require_lastmod)"
+    elif any(i.section == "archive" for i in items):
+        detail += "; no lastmod in sitemap, carried as archive rotation"
+    return items, SourceStatus(name, True, len(items), detail)
 
 
 # --------------------------------------------------------------------------- manual queue

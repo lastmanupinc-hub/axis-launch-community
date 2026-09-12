@@ -21,8 +21,32 @@ ALL_OFFERS = {**PRODUCTS["offers"], **PRODUCTS.get("seasonal_offers", {})}
 
 def test_every_product_has_the_required_fields():
     for key, product in PRODUCTS["products"].items():
-        for field in ("name", "short", "slug", "path", "role", "turnaround"):
+        for field in ("name", "short", "slug", "path", "role"):
             assert product.get(field), f"{key} is missing {field}"
+
+
+def test_every_product_path_matches_its_slug():
+    """The live router is /products/:slug, so a path that disagrees with the slug 404s."""
+    for key, product in PRODUCTS["products"].items():
+        assert product["path"] == f"/products/{product['slug']}", \
+            f"{key} path {product['path']} does not match slug {product['slug']}"
+
+
+def test_quantity_anchor_is_a_real_tier():
+    for key, product in PRODUCTS["products"].items():
+        tiers = product.get("qty_tiers") or []
+        if tiers:
+            assert product["qty_anchor"] in tiers, \
+                f"{key} anchors on {product['qty_anchor']}, not one of its tiers {tiers}"
+
+
+def test_no_product_claims_a_turnaround_while_nothing_can_ship():
+    """launch-readiness.yml: can_fulfil is false, so a turnaround would be a false claim."""
+    if config.capabilities("print_my_design").get("can_fulfil") is True:
+        return
+    for key, product in PRODUCTS["products"].items():
+        assert not product.get("turnaround"), \
+            f"{key} declares a turnaround but nothing can ship yet"
 
 
 def test_every_product_has_keywords_for_affinity_matching():
@@ -101,6 +125,9 @@ def test_no_hook_contains_a_blocked_term():
             for fill in pattern.get("fills", []):
                 v = guards.check_competitor_terms(fill, pattern["id"])
                 v += guards.check_unsupportable(fill, pattern["id"])
+                # AXIS Launch's prohibitions apply to every brand, so the shared hook
+                # library must clear them too.
+                v += guards.check_lexicon(fill, "", pattern["id"])
                 problems += [x for x in v if x.severity == "fail"]
     assert not problems, "hooks.yml contains blocked terms:\n" + \
         "\n".join(f"  {p}" for p in problems)
@@ -185,6 +212,43 @@ def test_utm_templates_have_the_slots_the_code_fills():
     assert "{date}" in utm["newsletter"]["campaign_template"]
     assert "{platform}" in utm["ads"]["source"]
     assert "{date}" in utm["ads"]["campaign_template"]
+
+
+# --- launch readiness ------------------------------------------------------
+
+def test_readiness_capabilities_are_all_declared():
+    caps = config.capabilities("print_my_design")
+    for flag in ("can_browse", "can_transact", "can_fulfil",
+                 "has_subscriber_capture", "has_price_confidence"):
+        assert flag in caps, f"launch-readiness.yml does not declare {flag}"
+
+
+def test_every_forbidden_capability_has_phrases():
+    readiness = config.launch_readiness()["print_my_design"]
+    for capability, phrases in readiness["forbidden_claims_until"].items():
+        assert phrases, f"{capability} lists no forbidden phrases"
+        assert capability in readiness["capabilities"], \
+            f"{capability} is gated but not declared as a capability"
+
+
+def test_no_offer_is_advertisable_while_checkout_takes_no_money():
+    """The offers stay in config so they are ready, but nothing may render them."""
+    if config.capabilities("print_my_design").get("can_transact") is True:
+        return
+    v = guards.check_can_spend("print_my_design")
+    assert v and v[0].rule == "cannot-transact"
+
+
+def test_products_record_their_price_basis():
+    basis = PRODUCTS["defaults"].get("price_basis")
+    assert basis in ("ui_placeholder", "vendor_quoted"), \
+        "products.yml must record whether prices are placeholders or real quotes"
+
+
+def test_not_built_products_are_kept_out_of_the_live_catalogue():
+    for key in PRODUCTS.get("not_built", {}):
+        assert key not in PRODUCTS["products"], \
+            f"{key} is listed as not built but also as a live product"
 
 
 if __name__ == "__main__":

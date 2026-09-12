@@ -148,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     # offer's end date may have gone by in between.
     report = guards.GuardReport()
     report.extend(guards.check_send_preconditions(BRAND))
+    report.extend(guards.check_can_send(BRAND))
     offer = (payload.get("offer") or {}).get("_raw")
     today = dt.date.fromisoformat(date)
     for field in ("subject", "preheader"):

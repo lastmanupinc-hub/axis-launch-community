@@ -57,6 +57,8 @@ def recheck(payload: dict, date: str) -> guards.GuardReport:
             report.extend(guards.check_copy(text, offer=offer, window=window, today=today,
                                             where=where))
     report.extend(guards.check_ladder_mix([v["ladder"] for v in payload["variants"]]))
+    # The gate that matters most: can a visitor actually buy anything?
+    report.extend(guards.check_can_spend("print_my_design"))
     if not payload.get("publishable", False):
         report.add(guards.Violation(
             "not-publishable", "fail", where="build",

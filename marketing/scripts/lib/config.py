@@ -73,6 +73,15 @@ def permissions() -> dict:
 
 
 @functools.lru_cache(maxsize=None)
+def launch_readiness() -> dict:
+    return _load(CONFIG_DIR / "launch-readiness.yml")
+
+
+def capabilities(brand_key: str) -> dict:
+    return (launch_readiness().get(brand_key) or {}).get("capabilities", {})
+
+
+@functools.lru_cache(maxsize=None)
 def annual_calendar() -> dict:
     return _load(CALENDAR_DIR / "annual.yml")
 

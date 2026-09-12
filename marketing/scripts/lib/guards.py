@@ -140,6 +140,28 @@ def _has_discount_signal(text: str) -> bool:
     return bool(_DISCOUNT_SIGNAL.search(text or ""))
 
 
+def check_lexicon(text: str, brand_key: str = "", where: str = "") -> list[Violation]:
+    """AXIS Launch's own lexicon and prohibited-claims lists.
+
+    axis-launch-platform/brand-guidelines.md owns the avoid-list; content-constraints.md
+    and policy-pack.md own the prohibitions. Adopted here so this system cannot emit copy
+    the platform's own standard forbids.
+
+    Severity depends on whose voice it is. The lexicon is an AXIS Launch brand rule, so it
+    fails on AXIS copy and warns on Print My Design copy - PMD genuinely runs an AI design
+    studio and may have cause to say so. The prohibitions are securities and valuation
+    exposure and fail for everyone, whatever the brand.
+    """
+    bl = config.blocklist()
+    lexicon_severity = "fail" if brand_key == "axis_launch" else "warn"
+    out = _scan(text, bl.get("axis_lexicon_avoid", []), "axis-lexicon", lexicon_severity,
+                where, "uses a word AXIS Launch's brand standard avoids ({term}).")
+    out += _scan(text, bl.get("axis_prohibited", []), "prohibited-claim", "fail", where,
+                 "securities, valuation or forward-looking revenue language ({term}). "
+                 "Prohibited everywhere - see content-constraints.md.")
+    return out
+
+
 # --------------------------------------------------------------------------- rule 2
 
 def check_offer_claim(text: str, offer: dict | None, where: str = "") -> list[Violation]:
@@ -299,6 +321,66 @@ def check_meaning_window(window: dict, offer: dict | None, where: str = "") -> l
     return []
 
 
+# --------------------------------------------------------------------------- readiness
+
+def check_launch_readiness(text: str, brand_key: str = "print_my_design",
+                           where: str = "") -> list[Violation]:
+    """Refuse any claim the product cannot currently honour.
+
+    config/launch-readiness.yml records what actually works, audited against the product
+    repo. Every capability that is false takes its forbidden phrases with it. This is the
+    guard that stops the system advertising a delivery date for something that cannot ship
+    or a discount on something that cannot be paid for.
+    """
+    readiness = config.launch_readiness().get(brand_key)
+    if not readiness:
+        return []
+    caps = readiness.get("capabilities", {})
+    forbidden = readiness.get("forbidden_claims_until", {})
+    out: list[Violation] = []
+    for capability, phrases in forbidden.items():
+        if caps.get(capability) is True:
+            continue
+        for phrase in phrases or []:
+            if _contains(text, phrase):
+                out.append(Violation(
+                    rule=f"not-yet-true:{capability}", severity="fail", where=where,
+                    term=phrase,
+                    message=(f"claims '{phrase}' but {brand_key} cannot {capability} today. "
+                             f"See config/launch-readiness.yml."),
+                ))
+    return out
+
+
+def check_can_spend(brand_key: str = "print_my_design") -> list[Violation]:
+    """Paid advertising requires that a visitor can actually complete a purchase."""
+    caps = config.capabilities(brand_key)
+    if caps.get("can_transact") is True:
+        return []
+    readiness = config.launch_readiness().get(brand_key, {})
+    why = (readiness.get("m2_sellable") or {}).get("consequence", "checkout takes no money")
+    return [Violation(
+        "cannot-transact", "fail", where=brand_key,
+        message=(f"paid advertising is blocked: {why} Spending on traffic to a store that "
+                 "cannot complete a sale burns budget and is the shape of policy violation "
+                 "that gets ad accounts restricted. Update config/launch-readiness.yml when "
+                 "M2 actually ships."),
+    )]
+
+
+def check_can_send(brand_key: str = "print_my_design") -> list[Violation]:
+    """A newsletter needs somewhere legitimate for subscribers to have come from."""
+    caps = config.capabilities(brand_key)
+    if caps.get("has_subscriber_capture") is True:
+        return []
+    return [Violation(
+        "no-subscriber-capture", "fail", where=brand_key,
+        message=("there is no email capture on the site, so there is no opted-in list to "
+                 "send to. Sending anyway would mean mailing addresses gathered some other "
+                 "way, which is exactly what compliance.md section 4 forbids."),
+    )]
+
+
 # --------------------------------------------------------------------------- ladder mix
 
 def check_ladder_mix(rungs: list[str], where: str = "daily-set") -> list[Violation]:
@@ -340,10 +422,12 @@ def check_length(text: str, maximum: int, where: str) -> list[Violation]:
 
 def check_copy(text: str, *, offer: dict | None = None, window: dict | None = None,
                customer_id: str | None = None, today: dt.date | None = None,
-               where: str = "") -> list[Violation]:
+               brand_key: str = "", where: str = "") -> list[Violation]:
     """Run every text-level guard over one piece of copy."""
     out = check_competitor_terms(text, where)
     out += check_unsupportable(text, where)
+    out += check_lexicon(text, brand_key, where)
+    out += check_launch_readiness(text, brand_key or "print_my_design", where)
     out += check_offer_claim(text, offer, where)
     out += check_urgency(text, offer, today=today, where=where)
     out += check_attribution(customer_id, today=today, where=where)

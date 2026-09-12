@@ -28,13 +28,13 @@ families:
         template: "I wish someone had told me this before I ordered {qty} {product}."
         fills:
           - "I wish someone had told me this before I ordered 500 business cards."
-          - "I wish someone had told me this before I ordered my first banner."
+          - "I wish someone had told me this before I ordered my first 500 postcards."
         ladder: story
       - id: story-love-hate
         template: "I love {thing}. I hate {problem}. Here is what we changed."
         fills:
           - "I love a good business card. I hate paying for 500 to find out the blue is wrong. So we print one first, free."
-          - "I love trade show season. I hate banners that arrive creased. So ours ship rolled, in a tube, always."
+          - "I love a good poster. I hate finding out the text was too small only once it is on the wall. So print one page at home first, at final size."
         ladder: purpose
       - id: story-n-days
         template: "We {action} for {n} days. Here is what happened."
@@ -45,14 +45,14 @@ families:
       - id: story-from-zero
         template: "Starting from zero? Here is exactly what I would print first."
         fills:
-          - "Opening a shop next month with nothing printed yet? Order in this sequence: cards, then a window decal, then a menu. Not the other way round."
-          - "First market stall and no print budget? One banner and 100 cards. Skip the flyers until you know what people ask you."
+          - "Opening next month with nothing printed yet? Order in this sequence: cards, then postcards, then flyers. Not the other way round."
+          - "First market stall and no print budget? One poster and 100 cards. Skip the flyers until you know what people actually ask you."
         ladder: purpose
       - id: story-small-to-big
         template: "Here is how {audience} turned {small} into {big}."
         fills:
-          - "A market stall turned one $18 banner into a queue that went around the building. The banner just said what she sold, in letters you could read from the road."
-          - "A two-person cleaning company turned 200 door hangers into a route that is now booked out. Two hundred. Not twenty thousand."
+          - "A market stall turned one poster into a queue that went around the building. The poster just said what she sold, in letters you could read from the road."
+          - "A two-person cleaning company turned 200 flyers into a route that is now booked out. Two hundred. Not twenty thousand."
         ladder: proof
       - id: story-tested-n
         template: "We tested {n} {things}. Only these worked."
@@ -63,14 +63,14 @@ families:
       - id: story-customer-scene
         template: "{audience} walked in with {artifact}. Walked out with {outcome}."
         fills:
-          - "She walked in with a logo drawn on the back of a receipt. She walked out with 250 cards and a window decal that matched."
-          - "He brought a phone photo of his old sign, faded to nothing. We matched the original colour from the unfaded edge."
+          - "She started with a logo drawn on the back of a receipt. She finished with 250 cards and postcards that matched."
+          - "He had a phone photo of an old poster, faded to nothing. The original colour was still there on the edge that had been behind the frame."
         ladder: identity
       - id: story-mistake
         template: "The most expensive {product} mistake we see, and it costs nothing to avoid."
         fills:
-          - "The most expensive business card mistake we see: art built at screen resolution. It looks perfect until it is 3.5 inches wide in someone's hand."
-          - "The most expensive banner mistake we see: text inside the hem. Two inches disappear into the pole pocket and nobody checks."
+          - "The most expensive business card mistake: art built at screen resolution. It looks perfect until it is 3.5 inches wide in someone's hand."
+          - "The most expensive poster mistake: text sized on a laptop. Legible at thirteen inches, unreadable at ten feet, and nobody checks."
         ladder: purpose
 
   controversy:
@@ -85,13 +85,13 @@ families:
         template: "{topic} is not complicated. People make it complicated."
         fills:
           - "Print is not complicated. Ink, stock, size, deadline. Everything else is someone selling you an upgrade."
-          - "Branding is not complicated for a shop with twelve customers. A readable sign and a card you are not embarrassed to hand over."
+          - "Branding is not complicated for a shop with twelve customers. A readable poster and a card you are not embarrassed to hand over."
         ladder: purpose
       - id: contro-dont-lack
         template: "You do not lack {trait}. You are doing {action} wrong."
         fills:
           - "You do not lack design talent. You are printing at the wrong size and blaming the design."
-          - "You do not lack customers. You have a sign nobody can read from a moving car."
+          - "You do not lack customers. You have a poster nobody can read from a moving car."
         ladder: identity
       - id: contro-dont-need-daily
         template: "You do not need to {common action} every {period}."
@@ -109,13 +109,13 @@ families:
         template: "Your {thing} is not working. Here is why."
         fills:
           - "Your flyer is not working. It leads with your business name. Nobody is looking for your business name; they are looking for the thing you do."
-          - "Your window decal is not working. It is at eye level for someone standing still, and everyone walking past is moving."
+          - "Your poster is not working. It is sized for someone standing still, and everyone walking past is moving."
         ladder: purpose
       - id: contro-want-negative
         template: "Want {negative outcome}? Keep doing {action}."
         fills:
           - "Want a box of 500 cards you will never hand out? Approve the proof on your phone, at night, without zooming in."
-          - "Want your banner to fade by August? Print it on indoor vinyl because it saved eleven dollars."
+          - "Want your stickers to peel by August? Put them on paper instead of vinyl because paper was cheaper."
         ladder: scarcity
       - id: contro-dont-need-trait
         template: "You do not need {trait} to get {result}."
@@ -172,7 +172,7 @@ families:
         template: "Go from {start} to {end} in {n} steps."
         fills:
           - "Go from a logo on your phone to 250 cards in your hand in four steps. The longest one is choosing the paper."
-          - "Go from nothing printed to a full shopfront in five orders, in the order that actually pays for itself."
+          - "Go from nothing printed to a full set in five orders, in the order that actually pays for itself."
         ladder: purpose
       - id: curio-nobody-expected
         template: "We checked {thing}. The result was not what we expected."
@@ -184,7 +184,7 @@ families:
         template: "You are probably overlooking these {n} things on your {product}."
         fills:
           - "Three things nearly every business card gets wrong, and all three are free to fix."
-          - "Two things on a banner nobody checks until it is hanging up and too late."
+          - "Two things on a poster nobody checks until it is on the wall and too late."
         ladder: purpose
 
   authority:
@@ -211,7 +211,7 @@ families:
         template: "This one factor decides most of your {outcome}."
         fills:
           - "One factor decides how your print looks more than design does: the stock. Everything else is adjustable after."
-          - "One factor decides whether a sign works: whether it can be read at the speed people pass it."
+          - "One factor decides whether a poster works: whether it can be read at the speed people pass it."
         ladder: purpose
       - id: auth-habit-killing
         template: "This habit may be quietly costing you {result}."
@@ -235,7 +235,7 @@ families:
         template: "This could get you {measurable result}."
         fills:
           - "A proof check before print has cut reorder-for-error jobs to almost nothing on our floor. It costs you two minutes."
-          - "{qty} {product} for {price}, on your desk in {turnaround}. That is the whole offer; there is no second page."
+          - "Six paper stocks for business cards, from a 14pt matte to a 32pt cotton. You can feel the step at 16pt."
         ladder: proof
       - id: auth-remember-before
         template: "Remember this before your next {action}."
@@ -260,14 +260,14 @@ families:
       - id: relate-closer-than
         template: "You are closer to {result} than you think if you notice this."
         fills:
-          - "You are one readable sign away from people knowing what you sell. Most shops are."
+          - "You are one readable poster away from people knowing what you sell. Most shops are."
           - "You are closer to looking established than you think. It is three matching items, not a rebrand."
         ladder: identity
       - id: relate-skip-and-ruin
         template: "Skip this and you may ruin your {outcome}."
         fills:
           - "Skip the paper proof and you may find out about the colour shift after 500 of them are boxed."
-          - "Skip the size check and your banner will be beautiful and two feet too wide for the wall."
+          - "Skip the size check and your poster will be beautiful and two sizes too big for the frame."
         ladder: scarcity
       - id: relate-stop-excuse
         template: "Stop using {common excuse}."
@@ -285,7 +285,7 @@ families:
         template: "Whatever you do, do not forget {tactic}."
         fills:
           - "Whatever you print this month, do not forget the thing people actually stand in front of: the door."
-          - "Whatever you order for the market, do not forget something to give people who are not buying today."
+          - "Whatever you print for the market, do not forget something to give the people who are not buying today."
         ladder: identity
       - id: relate-popular-or-true
         template: "Do you want {popular desire} or {true desire}?"
@@ -297,5 +297,5 @@ families:
         template: "{deadline} is closer than it looks for {audience}."
         fills:
           - "If you need it for the weekend, today is the day the file has to land, not tomorrow."
-          - "Market season starts sooner than the calendar suggests. The banner takes a day; deciding what it says takes a week."
+          - "Market season starts sooner than the calendar suggests. The poster is the quick part; deciding what it says takes a week."
         ladder: scarcity
