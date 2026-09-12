@@ -1,0 +1,239 @@
+version: 1
+_comment: Marketing-authored fields, merged over the imported catalogue by scripts/import_catalogue.py.
+  Everything here is ours to write; everything in products.yml that is NOT here comes from the product
+  repo and is overwritten on every import. Add a product key here before it appears in the catalogue
+  and the copy is ready the day it ships.
+products:
+  business_cards:
+    short: Business cards
+    role: acquisition
+    keywords:
+    - business card
+    - card stock
+    - cards
+    - card
+    image_style:
+    - in_hand
+    - stack_macro
+    - product_on_white
+    talking_points:
+    - Six stocks, from a standard 14pt matte to a 32pt cotton.
+    - Heavier stock changes how a card is handled more than any finish does.
+    - The back is free real estate and almost nobody uses it.
+  postcards:
+    short: Postcards
+    role: volume
+    keywords:
+    - postcard
+    - direct mail
+    - mailer
+    image_style:
+    - flat_lay
+    - in_hand
+    - product_on_white
+    talking_points:
+    - Full colour on thick card stock, for direct mail and event invites.
+    - The message people read is the one they do not have to open.
+  flyers:
+    short: Flyers
+    role: volume
+    keywords:
+    - flyer
+    - brochure
+    - leaflet
+    - handout
+    image_style:
+    - product_on_white
+    - lifestyle_in_context
+    - flat_lay
+    talking_points:
+    - Single or double sided, for handouts, displays and events.
+    - One message, large, beats five messages set small.
+  stickers:
+    short: Stickers
+    role: growth
+    keywords:
+    - sticker
+    - label
+    - die-cut
+    - die cut
+    - kiss-cut
+    - vinyl
+    image_style:
+    - detail_macro
+    - product_on_white
+    - lifestyle_in_context
+    talking_points:
+    - Die-cut or kiss-cut, on durable vinyl or paper. Waterproof options.
+    - A label turns a homemade thing into a product.
+  posters:
+    short: Posters
+    role: growth
+    keywords:
+    - poster
+    - large format
+    - wall art
+    - display
+    image_style:
+    - install_shot
+    - lifestyle_in_context
+    - product_on_white
+    talking_points:
+    - Large format for events, retail displays and wall art.
+    - Readable at the distance people actually stand.
+  invitations:
+    short: Invitations
+    role: seasonal
+    season:
+    - may
+    - june
+    - july
+    keywords:
+    - invitation
+    - invite
+    - wedding
+    - stationery
+    image_style:
+    - flat_lay
+    - detail_macro
+    - in_hand
+    talking_points:
+    - Weddings, parties and corporate events, with optional envelope printing.
+    - Paper weight is the whole impression, before a word is read.
+not_built:
+  sample_kit:
+    note: 'A free physical sample kit is the strongest top-of-funnel mechanic in this category (see
+      strategy/cadence.md) and PMD has no equivalent. It is also the only one that works before
+      checkout does, because it asks for an address rather than a card. Worth building first.
+
+      '
+  banners:
+    note: 'A banner print specification is seeded in migration 042 and a vendor prepress profile
+      exists, but there is no storefront product, so nothing can be advertised.
+
+      '
+  apparel_packaging:
+    note: Not in the catalogue, not in the print specifications. Do not advertise.
+offers:
+  first_order:
+    label: first order
+    phrase: 15% off your first order
+    kind: percent
+    value: 15
+    applies_to:
+    - business_cards
+    - postcards
+    - flyers
+    - stickers
+    - posters
+    - invitations
+    exclusions:
+    - delivery
+    - taxes
+    minimum: null
+    starts: '2026-01-01'
+    ends: null
+    evidence: always_on_acquisition
+    always_on: true
+  email_signup:
+    label: email signup
+    phrase: 10% off when you join the list
+    kind: percent
+    value: 10
+    applies_to:
+    - business_cards
+    - postcards
+    - stickers
+    exclusions:
+    - delivery
+    - taxes
+    minimum: null
+    starts: '2026-01-01'
+    ends: null
+    evidence: always_on_acquisition
+    always_on: true
+  free_shipping:
+    label: free delivery
+    phrase: free delivery over $75
+    kind: shipping
+    threshold: 75.0
+    calculated: after discounts
+    applies_to:
+    - business_cards
+    - postcards
+    - flyers
+    - stickers
+    - posters
+    - invitations
+    exclusions:
+    - oversized items
+    starts: '2026-01-01'
+    ends: null
+    evidence: always_on_acquisition
+    always_on: true
+  spend_ladder:
+    label: spend and save
+    phrase: up to $110 off larger orders
+    kind: tiered_flat
+    tiers:
+    - over: 80.0
+      false: 12.0
+    - over: 250.0
+      false: 40.0
+    - over: 500.0
+      false: 110.0
+    applies_to:
+    - business_cards
+    - postcards
+    - flyers
+    - stickers
+    - posters
+    - invitations
+    exclusions:
+    - delivery
+    - taxes
+    starts: '2026-01-01'
+    ends: null
+    evidence: always_on_acquisition
+    always_on: true
+    stacking: one promotion code per order
+seasonal_offers:
+  autumn_posters:
+    label: autumn posters
+    phrase: 20% off posters
+    kind: percent
+    value: 20
+    applies_to:
+    - posters
+    exclusions:
+    - delivery
+    - taxes
+    starts: '2026-09-01'
+    ends: '2026-10-31'
+    evidence: press_schedule_autumn
+  early_invitations:
+    label: early invitations
+    phrase: 25% off invitations ordered early
+    kind: percent
+    value: 25
+    applies_to:
+    - invitations
+    exclusions:
+    - envelope printing
+    - delivery
+    - taxes
+    starts: '2026-09-15'
+    ends: '2026-11-15'
+    evidence: postal_deadline_december
+evidence:
+  always_on_acquisition:
+    type: no_deadline
+    note: Always-on. Urgency language is forbidden against this record.
+  press_schedule_autumn:
+    type: press_cutoff
+    note: Placeholder. PMD has no press schedule of its own - it allocates to vendors.
+    verify: Replace with a real vendor production cutoff before any send cites it.
+  postal_deadline_december:
+    type: external_calendar
+    note: National last-posting dates for December delivery.
+    verify: Republished annually by the postal service; re-check every September.

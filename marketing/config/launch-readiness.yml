@@ -1,0 +1,160 @@
+# Launch readiness - what the product can actually do today.
+#
+# WHY THIS FILE EXISTS
+#
+# Advertising is a promise. Every claim in an ad implies the buyer can act on it: that there
+# is a thing to buy, a way to pay, and a way for it to arrive. When any of those is missing,
+# the ad is not merely ineffective - it spends money sending people to a dead end, and on
+# Meta and Google it is the shape of policy violation that gets an account restricted
+# (advertising a product that cannot be purchased).
+#
+# So the milestones below are not documentation. They are enforced:
+#   - guards.check_launch_readiness() fails any asset whose claims exceed what is true.
+#   - publish_ads.py refuses to publish while `can_transact` is false.
+#   - send_newsletter.py refuses to send while `has_subscriber_capture` is false.
+#
+# SOURCE: audited against PMD-MASTER at commit aecfa87 (2026-09-04), the repo HEAD, and
+# cross-checked against plugins/pmd-customizer/server/LAUNCH_STRATEGY.md, which is the only
+# authoritative status document and was last updated 2026-09-04.
+#
+# UPDATE THIS FILE when a milestone actually ships. Do not update it in advance.
+
+version: 1
+audited_at: "2026-09-12"
+audited_against: "PMD-MASTER @ aecfa87 (2026-09-04)"
+
+print_my_design:
+
+  # M1 - Alive: a stranger can open the storefront, use the editor, save a design.
+  m1_alive:
+    status: reached
+    evidence: >
+      LAUNCH_STRATEGY.md update 2026-09-04: printmydesign.jonathanarvay.com resolves with a
+      valid cert and serves real 200s from Fly.io with Neon Postgres. Six products render
+      from ui/src/catalog/productCatalog.ts.
+    caveat: >
+      The owner had not yet confirmed the observable from a non-home network. The deploy
+      working is not the same as the observable having been observed.
+
+  # M2 - Sellable: a customer pays with a real card and the order lands as paid.
+  m2_sellable:
+    status: not_reached
+    evidence: >
+      api/routes/checkout.ts exposes /estimate, /validate-coupon and /finalize only.
+      /finalize creates an order and returns totals. There is no payment intent, no capture,
+      no webhook, and core/ecommerce/payments/ does not exist. A grep for payment across
+      core/ecommerce/ and the checkout routes returns zero matches. The Stripe code that does
+      exist (api/stripe-webhook.ts, core/billing/BillingManager.ts) bills SaaS tenants for
+      subscriptions and never touches a customer order.
+    consequence: "Every order placed today is free. No retail customer can pay."
+
+  # M3 - Fulfilling: a paid order becomes a file a vendor accepts, and arrives.
+  m3_fulfilling:
+    status: not_reached
+    evidence: >
+      core/print/RendererAdapter.ts ships UnconfiguredRenderer, which throws by design;
+      setRenderer() is never called anywhere. Three vendor adapters exist (Gelato,
+      Cloudprinter, Printful) but they are price-lookup only - scripts/probe-vendor-costs.ts
+      states it never touches an order endpoint. There is no order-submission adapter for any
+      vendor, and none at all for 4over or SinaLite.
+    consequence: "No order can be transmitted to a printer. Nothing can ship."
+
+  # Derived flags. These are what the guards actually read.
+  capabilities:
+    can_browse: true
+    can_design: true
+    can_transact: false           # gates ALL paid advertising
+    can_fulfil: false             # gates every turnaround and delivery claim
+    has_subscriber_capture: false # gates the newsletter entirely
+    has_price_confidence: false   # gates advertising any specific price
+
+  # Claims that are false today. The guard fails any asset containing them.
+  forbidden_claims_until:
+    can_fulfil:
+      - "ships in"
+      - "arrives in"
+      - "on your desk"
+      - "delivered in"
+      - "next day"
+      - "business days"
+      - "turnaround"
+      - "fast shipping"
+      - "free delivery"
+      - "satisfaction guarantee"
+      - "money back"
+    can_transact:
+      - "buy now"
+      - "order now"
+      - "shop now"
+      - "add to cart"
+      - "checkout"
+      - "% off"
+      - "off your first order"
+    has_price_confidence:
+      - "from $"
+      - "starting at"
+      - "as low as"
+      - "per card"
+      - "per unit"
+
+  # What the system is allowed to do at each level. The first unmet capability wins.
+  permitted_today:
+    channels: ["organic social", "email to people who already asked", "content"]
+    forbidden_channels: ["paid search", "paid social", "any spend"]
+    permitted_ask: >
+      Look at the editor and make something. That is a real, working, honest offer today:
+      M1 is reached, the design studio works, and saving a design does not require payment.
+    forbidden_ask: "Anything that implies a purchase, a price, a delivery, or a deadline."
+
+  # The path that closes has_price_confidence, and probably can_fulfil with it.
+  printful_path:
+    status: in_progress
+    note: >
+      The product repo wired Printful (commit aba0e82) precisely because it is sellable
+      soonest: its v1 catalog needs no authentication and returns real prices, and those
+      prices are FLAT-RATE. Flat-rate is the load-bearing property for advertising, because
+      it is the one case where multiplying a stated price by a quantity is arithmetic rather
+      than estimation. A verification run imported 145 variants across 32 products (70
+      poster, 53 postcard, 22 sticker) and quoted them live with the 6% floor applied.
+    what_it_unlocks:
+      - "has_price_confidence, per product, for anything imported with price_basis: vendor_quoted"
+      - "a shorter route to can_fulfil, since Printful is a dropshipper - but an order
+         submission adapter still has to be written; the wired adapters are cost-lookup only"
+    advertising_traps:
+      - >
+        Business cards are sold as PACKS, not loose units: "Set of Business Cards" at 50
+        pieces and 100 pieces. Ordering quantity 2 of the 100-pack is two sets. An ad that
+        says "250 business cards" is advertising a tier that does not exist on this path.
+      - >
+        The storefront's quantity tiers (50/100/250/500/1000/2500/5000 for cards) come from
+        the hardcoded UI catalogue, not from Printful, and are not price breaks. Do not
+        advertise a per-unit price at a quantity unless the product carries flat_rate: true.
+    action: >
+      Run scripts/import_catalogue.py --printful <export.json> once a catalogue export
+      exists. It marks those prices vendor_quoted. Then flip has_price_confidence.
+
+  # Known live-site problems found during the audit. Not this system's to fix, but this
+  # system must not amplify them.
+  site_claims_to_correct:
+    - claim: "Ships in 3-5 days"
+      where: "ui/src/pages/StorefrontPage.tsx value props"
+      problem: "Nothing can ship. No renderer, no vendor order adapter."
+    - claim: "100% satisfaction guarantee"
+      where: "ui/src/pages/StorefrontPage.tsx value props"
+      problem: "No fulfilment and no refund path, since no money is taken."
+    - claim: "Six starting prices ($14.99-$49.99)"
+      where: "ui/src/catalog/productCatalog.ts"
+      problem: >
+        Hardcoded literals, never checked against vendor cost x 1.06. The server's own
+        pricing service throws rather than guess, which is the correct behaviour; the UI
+        does not consult it.
+
+axis_launch:
+  capabilities:
+    can_browse: true
+    can_transact: true            # listings are free; PAID handles payment separately
+    has_subscriber_capture: unknown
+  note: >
+    The AXIS Launch site is a 205-page static build with real content at /apps (66),
+    /community (61), /microapps (22), /for (20) and /best (20). Its newsletter is an
+    existing, separate commitment - see strategy/newsletter-cadence.md.

@@ -1,0 +1,25 @@
+# Customer permission records.
+#
+# compliance.md #5: a customer's name, business, logo, premises or words appear in an asset
+# ONLY with a record here. guards.check_attribution() blocks any asset referencing a
+# customer_id that is missing or expired, and both daily builds fail closed on it.
+#
+# Add a record when the permission is given, not when the asset is made.
+#
+# customers:
+#   bakery-on-mill-street:
+#     name: "Full name as they want it shown"
+#     business: "Business name as they want it shown"
+#     granted_at: 2026-09-04
+#     granted_via: "signed release, on file at <location>"   # or: email thread, dated
+#     scope:
+#       - "name and business name in email and social"
+#       - "photograph of the shopfront"
+#       - "quote as given, not edited"
+#     excludes:
+#       - "no paid advertising"        # honour this; it is common and it is binding
+#     expires: 2028-09-04              # omit for no expiry; a dated review is better
+#     incentive: null                  # if anything was given, say what - FTC requires disclosure
+
+version: 1
+customers: {}

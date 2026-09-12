@@ -1,0 +1,73 @@
+# The weekday rotation. The annual window says how hard to push; this says what shape the day
+# takes. Both feed scripts/build_newsletter.py and scripts/build_ads.py.
+#
+# `ladder` is the value-ladder rung the day leads with (strategy/value-ladder.md).
+# `families` are the hook families the ad generator draws from that day (config/hooks.yml).
+# `newsletter_shape` selects the template layout.
+
+version: 1
+
+days:
+
+  monday:
+    label: "Proof Monday"
+    ladder: proof
+    families: [authority, storytelling]
+    newsletter_shape: standard
+    lead: "Something we printed last week, with the numbers and the date."
+    ad_emphasis: { proof: 3, identity: 2, purpose: 1 }
+
+  tuesday:
+    label: "How it is made"
+    ladder: purpose
+    families: [curiosity, controversy]
+    newsletter_shape: standard
+    lead: "One technique, explained well enough to use without ordering anything."
+    ad_emphasis: { purpose: 3, proof: 2, story: 1 }
+
+  wednesday:
+    label: "Customer story"
+    ladder: story
+    families: [storytelling, relatability]
+    newsletter_shape: feature
+    lead: "One named customer, with permission, and what actually changed for them."
+    ad_emphasis: { story: 3, identity: 2, proof: 1 }
+
+  thursday:
+    label: "Community and platform"
+    ladder: identity
+    families: [relatability, authority]
+    newsletter_shape: roundup
+    lead: "What moved on the AXIS Launch community and the sites this week."
+    ad_emphasis: { identity: 3, purpose: 2, proof: 1 }
+    cross_brand: true          # the day AXIS Launch leads rather than rides along
+
+  friday:
+    label: "The offer"
+    ladder: scarcity
+    families: [relatability, authority]
+    newsletter_shape: offer
+    lead: "The week's offer, stated once, with its exclusions and its real end date."
+    ad_emphasis: { scarcity: 2, identity: 2, proof: 2 }
+
+  saturday:
+    label: "Weekend read"
+    ladder: story
+    families: [storytelling, curiosity]
+    newsletter_shape: feature
+    lead: "The long one. Research says Saturday is the category's heaviest send day."
+    ad_emphasis: { story: 3, purpose: 2, identity: 1 }
+
+  sunday:
+    label: "Short edition"
+    ladder: purpose
+    families: [curiosity, relatability]
+    newsletter_shape: short
+    lead: "Three lines and one link. Sunday earns brevity."
+    ad_emphasis: { purpose: 2, identity: 2, story: 2 }
+
+# Global send policy. See README - a day with nothing to say holds rather than pads.
+send_policy:
+  min_items_to_send: 2           # below this, fall back to the short edition
+  min_items_for_short: 1         # below this, hold the send entirely
+  hold_is_success: true          # a held send is a clean exit, not a workflow failure

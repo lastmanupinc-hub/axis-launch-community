@@ -1,0 +1,114 @@
+# The annual rhythm, machine-readable. Reasoning and evidence grades: strategy/cadence.md
+#
+# `posture` drives how aggressive the day's offer may be.
+# `discount_weight` 0.0-1.0 scales the offer emphasis in both the newsletter and the ad set.
+# `meaning_window: true` suppresses ALL offers - the one offer-free stretch of the year.
+# Windows are matched on month-day so they roll over year to year without editing.
+
+version: 1
+timezone: "America/New_York"
+
+windows:
+
+  - id: new_year_push
+    label: "New year, new signage"
+    from: "01-02"
+    to: "02-29"          # 02-29 not 02-28: month-day matching must cover the leap day
+    posture: heaviest
+    discount_weight: 0.9
+    lead_products: [signage, business_cards, banners, stickers]
+    themes: ["rebrand the shop", "first impression for the new year", "replace the faded sign"]
+
+  - id: spring_build
+    label: "Quiet build"
+    from: "03-01"
+    to: "04-20"
+    posture: educate
+    discount_weight: 0.2
+    lead_products: [sample_kit, business_cards, flyers]
+    themes: ["how to print well", "file prep", "sample kits", "paper education"]
+
+  - id: meaning_window
+    label: "Customer report and brand film"
+    from: "04-21"
+    to: "05-10"
+    posture: brand
+    discount_weight: 0.0
+    meaning_window: true
+    lead_products: []
+    themes: ["our annual customer report", "real customers, named", "no offer this fortnight"]
+    note: >
+      The one offer-free window. Our Meaning asset ships here. No percentage, no deadline, no
+      CTA beyond reading the report. The generator refuses to attach an offer to any asset
+      dated inside this window.
+
+  - id: events_season
+    label: "Events, weddings, markets"
+    from: "05-11"
+    to: "06-30"
+    posture: seasonal
+    discount_weight: 0.5
+    lead_products: [invitations, banners, signage, stickers]
+    themes: ["market season", "weddings", "graduations", "fairs and fetes"]
+
+  - id: summer_ladder
+    label: "Category ladder"
+    from: "07-01"
+    to: "08-31"
+    posture: staggered
+    discount_weight: 0.5
+    lead_products: [signage, stickers, apparel, packaging]
+    themes: ["a different category each week", "margin-set percentages, never one sitewide number"]
+    note: "Never one blanket percentage. Each category gets its own number, set by margin band."
+
+  - id: autumn_ramp
+    label: "Autumn ramp"
+    from: "09-01"
+    to: "10-31"
+    posture: rising
+    discount_weight: 0.6
+    lead_products: [signage, banners, holiday_cards, packaging]
+    themes: ["autumn trading", "seed holiday cards early", "get the sign right before winter"]
+
+  - id: pre_peak
+    label: "Pre-peak teaser"
+    from: "11-01"
+    to: "11-24"
+    posture: teaser
+    discount_weight: 0.75
+    lead_products: [holiday_cards, apparel, packaging, stickers]
+    themes: ["one step below the peak", "warm the list", "tell them the date"]
+
+  - id: peak
+    label: "Peak week"
+    from: "11-25"
+    to: "12-02"
+    posture: peak
+    discount_weight: 1.0
+    rotating_daily: true
+    lead_products: [holiday_cards, business_cards, apparel, packaging, signage, stickers]
+    themes: ["a genuinely different deal each day", "small business Saturday: signage and postcards"]
+    note: "Rotating daily deals. Each day's deal must be materially different, not a relabel."
+
+  - id: deadline_run
+    label: "Deadline run"
+    from: "12-03"
+    to: "12-24"
+    posture: deadline
+    discount_weight: 0.7
+    lead_products: [holiday_cards, packaging, stickers, apparel]
+    themes: ["gifting", "then the posting deadline", "seed the January offer"]
+    note: >
+      The postal deadline is the only countdown we own outright, because it is not ours. After
+      the last posting date, discount_weight effectively drops to zero - there is nothing
+      honest left to sell on urgency.
+
+  - id: dark
+    label: "Dark"
+    from: "12-25"
+    to: "01-01"
+    posture: dark
+    discount_weight: 0.0
+    lead_products: []
+    themes: ["one thank-you, no offer"]
+    send_policy: "hold"      # the newsletter does not send in this window except one thank-you

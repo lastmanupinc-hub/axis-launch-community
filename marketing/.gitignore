@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+# Brand fonts are licensed per-seat; vendor them locally, never commit them.
+brand/fonts/*.woff2
+brand/fonts/*.woff
+brand/fonts/*.ttf
+brand/fonts/*.otf

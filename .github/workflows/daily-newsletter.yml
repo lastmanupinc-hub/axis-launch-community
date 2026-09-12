@@ -1,0 +1,182 @@
+name: Daily newsletter
+
+# Build in the morning, send in the evening. The research behind strategy/cadence.md puts
+# the category's sends in the early evening; the gap in between is the review window.
+#
+# The `send` job targets the `newsletter-send` environment. Add required reviewers to that
+# environment in repo settings and every send waits for a human click. Leave it without
+# reviewers and it dispatches on its own.
+on:
+  schedule:
+    - cron: "12 11 * * *"     # 11:12 UTC daily - build
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "ISO date to build (default: today)"
+        required: false
+      send:
+        description: "Dispatch after building"
+        type: boolean
+        default: false
+      force:
+        description: "Build even if the send policy says hold"
+        type: boolean
+        default: false
+
+concurrency:
+  group: newsletter-${{ github.event.inputs.date || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.build.outputs.decision }}
+      date: ${{ steps.build.outputs.date }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: marketing/requirements.txt
+
+      - run: pip install -r marketing/requirements.txt
+
+      - name: Run guard tests
+        run: |
+          python3 marketing/tests/test_guards.py
+          python3 marketing/tests/test_sources.py
+          python3 marketing/tests/test_config.py
+
+      - name: Probe what the product can actually do
+        env:
+          PMD_API_BASE: ${{ vars.PMD_API_BASE }}
+          PMD_API_TOKEN: ${{ secrets.PMD_API_TOKEN }}
+        run: python3 marketing/scripts/probe_capabilities.py
+
+      - name: Refresh the catalogue from the live shop
+        env:
+          PMD_API_BASE: ${{ vars.PMD_API_BASE }}
+          PMD_API_TOKEN: ${{ secrets.PMD_API_TOKEN }}
+        # Refuses to write an empty catalogue, so a bad token or an unseeded table leaves
+        # the previous one standing rather than blanking the ads. Never fails the job: a
+        # stale catalogue is worth less than a fresh one and far more than no run at all.
+        run: python3 marketing/scripts/import_catalogue.py --api || echo "catalogue unchanged"
+
+      - name: Build issue
+        id: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PMD_POSTAL_ADDRESS: ${{ secrets.PMD_POSTAL_ADDRESS }}
+          AXIS_POSTAL_ADDRESS: ${{ secrets.AXIS_POSTAL_ADDRESS }}
+          ASSET_BASE_URL: ${{ vars.ASSET_BASE_URL }}
+          UNSUBSCRIBE_URL: ${{ vars.UNSUBSCRIBE_URL }}
+          PREFERENCES_URL: ${{ vars.PREFERENCES_URL }}
+          CONSENT_NOTE: ${{ vars.CONSENT_NOTE }}
+          PMD_API_BASE: ${{ vars.PMD_API_BASE }}
+          PMD_API_TOKEN: ${{ secrets.PMD_API_TOKEN }}
+        run: |
+          DATE="${{ github.event.inputs.date }}"
+          DATE="${DATE:-$(date -u +%F)}"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          ARGS="--date $DATE"
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          python3 marketing/scripts/build_newsletter.py $ARGS | tee build.log
+          DECISION=$(python3 -c "import json,sys;p='marketing/out/newsletter/$DATE/issue.json';import os;print(json.load(open(p))['decision'] if os.path.exists(p) else 'hold')")
+          echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Newsletter ${{ steps.build.outputs.date }}"
+            echo ""
+            echo '```'
+            cat build.log 2>/dev/null || echo "(build produced no log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record run health
+        id: health
+        continue-on-error: true          # record and report; the gate is the final step
+        run: python3 marketing/scripts/report_health.py --kind newsletter --date ${{ steps.build.outputs.date }}
+
+      - name: Commit the archive
+        if: steps.build.outputs.decision != 'hold'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add marketing/out marketing/queue marketing/config/products.yml \
+                  marketing/config/launch-readiness.detected.yml
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "newsletter: issue ${{ steps.build.outputs.date }}"
+            git push
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: steps.build.outputs.decision != 'hold'
+        with:
+          name: newsletter-${{ steps.build.outputs.date }}
+          path: marketing/out/newsletter/${{ steps.build.outputs.date }}/
+          retention-days: 30
+      - name: Fail if the system has been unable to do its job
+        # Separate from the recording step so the health record is committed either way.
+        # This fails only on "broken" - unreachable, unauthenticated, a dry pipeline, a
+        # capability regression. A known blocker is "waiting" and never reaches here.
+        run: python3 marketing/scripts/report_health.py --kind newsletter --date ${{ steps.build.outputs.date }} --no-write
+
+
+  send:
+    needs: build
+    if: needs.build.outputs.decision != 'hold' && (github.event.inputs.send == 'true' || github.event_name == 'schedule')
+    runs-on: ubuntu-latest
+    # Add required reviewers to this environment to gate every send on a human click.
+    environment: newsletter-send
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: marketing/requirements.txt
+
+      - run: pip install -r marketing/requirements.txt
+
+      - name: Rebuild for send
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PMD_POSTAL_ADDRESS: ${{ secrets.PMD_POSTAL_ADDRESS }}
+          ASSET_BASE_URL: ${{ vars.ASSET_BASE_URL }}
+          UNSUBSCRIBE_URL: ${{ vars.UNSUBSCRIBE_URL }}
+          PREFERENCES_URL: ${{ vars.PREFERENCES_URL }}
+          CONSENT_NOTE: ${{ vars.CONSENT_NOTE }}
+        run: python3 marketing/scripts/build_newsletter.py --date ${{ needs.build.outputs.date }}
+
+      - name: Dispatch
+        env:
+          PMD_POSTAL_ADDRESS: ${{ secrets.PMD_POSTAL_ADDRESS }}
+          NEWSLETTER_PROVIDER: ${{ vars.NEWSLETTER_PROVIDER }}
+          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+          MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_LIST_ID }}
+        run: |
+          # NEWSLETTER_LIVE must be the string "true" in repo variables, or this stays a
+          # dry run. Two independent switches: the environment gate and this variable.
+          if [ "${{ vars.NEWSLETTER_LIVE }}" = "true" ]; then
+            python3 marketing/scripts/send_newsletter.py --date ${{ needs.build.outputs.date }} --live
+          else
+            echo "NEWSLETTER_LIVE is not 'true' - dry run only."
+            python3 marketing/scripts/send_newsletter.py --date ${{ needs.build.outputs.date }}
+          fi

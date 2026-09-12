@@ -1,0 +1,112 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family:'PMD Display'; src:url('{{ font_dir }}/Poppins-SemiBold.woff2') format('woff2'); font-weight:600; font-display:block; }
+  @font-face { font-family:'PMD Body';    src:url('{{ font_dir }}/Inter-Regular.woff2')   format('woff2'); font-weight:400; font-display:block; }
+  :root{
+    --orange:{{ p.orange }}; --orange-deep:{{ p.orange_deep }};
+    --blue:{{ p.blue }}; --blue-bright:{{ p.blue_bright }};
+    --ink:{{ p.ink }}; --white:#fff; --slate:{{ p.slate }};
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:{{ w }}px;height:{{ h }}px;overflow:hidden}
+  body{
+    background:var(--ink); color:var(--white);
+    font-family:'PMD Body','Liberation Sans','DejaVu Sans',Arial,sans-serif;
+    display:flex; flex-direction:column;
+    padding:{{ pad }}px;
+  }
+  .display{font-family:'PMD Display','Liberation Sans','DejaVu Sans',Arial,sans-serif;font-weight:600}
+  /* PHOTOGRAPHY LAYER. Present only when brand/photography/{slug}-{style}.png exists; the
+     ad is otherwise exactly the type-on-ink layout it has always been. Same degradation
+     rule as everything else here -- a missing asset costs a plainer ad, never a broken one.
+
+     The scrim is not a mood filter, it is the legibility contract. brand/print-my-design.md
+     sets the floor at "ink at 55% or darker" for the mark on photography, and every value
+     below clears it; the ends are heavier because that is where the headline, the CTA and
+     the domain sit, and a generated photograph can put anything at all behind them. */
+  .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .scrim{position:absolute;inset:0;z-index:1;
+         background:linear-gradient(180deg,
+           rgba(14,14,16,0.88) 0%, rgba(14,14,16,0.76) 34%,
+           rgba(14,14,16,0.80) 62%, rgba(14,14,16,0.92) 100%)}
+  .top,.mid,.bottom{position:relative;z-index:2}
+  /* Measured against a deliberately near-white test photograph, sampling the composited
+     backdrop rather than the glyphs. The mid-scrim started at 0.66, which put the orange
+     highlight word at 3.14:1 -- over the large-text floor by four hundredths, on a brighter
+     photo than this one it would be under. At 0.76 the same word measures 4.4:1.
+
+     The footnote is the other half of that: --slate is 3.66:1 on ink and 1.19:1 over a
+     photograph, which is not dim, it is gone. Over photography it takes the same light grey
+     the domain uses. Nothing here inherits a colour that was only ever checked on ink. */
+  .photo ~ .bottom .footnote{color:#D6D6DC}
+  /* A deliberate, narrow departure from brand: print-my-design.md assigns --orange-deep to
+     urgency and deadlines, and that is still what runs on ink. Over a photograph it
+     measures 4.52:1 against the brightest backdrop the scrim can leave -- past the 4.5
+     normal-text floor by two hundredths, which is the same non-margin the mid-scrim was
+     just fixed for. --orange is 6.51:1 and stays inside the brand's own accent family. */
+  .deadline .photo ~ .bottom .footnote{color:var(--orange)}
+  /* 4px signature rule, top edge, full bleed */
+  .rule{position:absolute;top:0;left:0;right:0;z-index:3;height:{{ (h/180)|round|int }}px;
+        background:linear-gradient(135deg,var(--orange) 0%,var(--orange) 44%,#A67A55 60%,var(--blue) 76%,var(--blue) 100%)}
+  .top{display:flex;align-items:center;gap:{{ (w/54)|round|int }}px}
+  .logo{width:{{ logo }}px;height:{{ logo }}px;flex:0 0 auto}
+  .logo.mono{color:var(--white)}
+  .logo.mono svg{width:100%;height:100%;display:block}
+  .kicker{font-size:{{ kicker_px }}px;letter-spacing:{{ (kicker_px*0.09)|round(1) }}px;
+          text-transform:uppercase;color:var(--orange);font-weight:600}
+  .mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:{{ (h/28)|round|int }}px 0}
+  .headline{font-size:{{ head_px }}px;line-height:1.14;letter-spacing:-{{ (head_px*0.018)|round(1) }}px;
+            max-width:{{ (w*0.96)|round|int }}px}
+  .headline em{font-style:normal;color:var(--orange)}
+  .support{margin-top:{{ (h/34)|round|int }}px;font-size:{{ body_px }}px;line-height:1.42;
+           color:#D6D6DC;max-width:{{ (w*0.9)|round|int }}px}
+  .bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:{{ (w/30)|round|int }}px}
+  .footnote{font-size:{{ foot_px }}px;line-height:1.4;color:var(--slate);max-width:{{ (w*0.52)|round|int }}px}
+  .endcap{display:flex;flex-direction:column;align-items:flex-end;
+          gap:{{ (foot_px*0.55)|round|int }}px;flex:0 0 auto}
+  .cta{background:var(--orange);color:var(--ink);font-weight:600;
+       font-size:{{ cta_px }}px;padding:{{ (cta_px*0.62)|round|int }}px {{ (cta_px*1.15)|round|int }}px;
+       border-radius:{{ (cta_px*0.42)|round|int }}px;white-space:nowrap}
+  /* The address, on the artwork itself. An ad is screenshotted, reposted and cropped out
+     of every surface that carried a link, and at that point the CTA is an instruction with
+     no destination. Set below the button rather than inside it: the button says what to do
+     and the domain says where, and merging them makes a pill too wide for a 9:16 canvas. */
+  .domain{font-size:{{ (foot_px*0.95)|round|int }}px;letter-spacing:{{ (foot_px*0.02)|round(1) }}px;
+          color:#D6D6DC;white-space:nowrap;font-weight:600}
+  /* proof is never orange - brand/print-my-design.md */
+  .proof{border-left:{{ (w/135)|round|int }}px solid var(--blue-bright);
+         padding-left:{{ (w/34)|round|int }}px}
+  .quote .headline{font-size:{{ (head_px*0.94)|round|int }}px}
+  .quote .headline:before{content:'\201C';color:var(--orange)}
+  .quote .headline:after{content:'\201D';color:var(--orange)}
+  /* Scoped to <body>, not to .mid. This rule was written as `.deadline .footnote` while
+     the only element carrying the template class was .mid -- and .footnote lives in
+     .bottom, a SIBLING of .mid, so the selector never matched anything and every deadline
+     ad rendered its deadline in the same grey as an ordinary footnote. Nothing errors when
+     a selector matches nothing, which is why it survived a visual review: the ad looked
+     fine, it just wasn't doing the one thing the urgency template exists to do. */
+  .deadline .footnote{color:var(--orange-deep);font-weight:600}
+</style>
+<body class="{{ template }}">
+{% if photo_src %}<img class="photo" src="{{ photo_src }}" alt="">
+<div class="scrim"></div>{% endif %}
+<div class="rule"></div>
+<div class="top">
+  {% if logo_svg %}<div class="logo mono">{{ logo_svg }}</div>
+  {% else %}<img class="logo" src="{{ logo_src }}" alt="">{% endif %}
+  <div class="kicker">{{ kicker }}</div>
+</div>
+<div class="mid {{ template }}">
+  <div class="{{ 'proof' if template == 'receipt' else '' }}">
+    <div class="headline display">{{ headline_html }}</div>
+    {% if support %}<div class="support">{{ support }}</div>{% endif %}
+  </div>
+</div>
+<div class="bottom">
+  <div class="footnote">{{ footer }}</div>
+  <div class="endcap">
+    {% if cta %}<div class="cta display">{{ cta }}</div>{% endif %}
+    <div class="domain display">{{ domain }}</div>
+  </div>
+</div>

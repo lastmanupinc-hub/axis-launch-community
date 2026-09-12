@@ -1,0 +1,30 @@
+# Detected capabilities - GENERATED, do not edit by hand.
+#
+#   python3 marketing/scripts/probe_capabilities.py
+#
+# The declared baseline lives in launch-readiness.yml and is conservative. This file is what
+# the product actually answered when asked. A fresh, reachable probe overrides the baseline
+# in both directions; an unreachable or stale one is ignored and the baseline applies.
+#
+# `reachable: false` means the probe could not see the product at all. That is treated as
+# "stop", not as "carry on" - see scripts/probe_capabilities.py.
+
+version: 1
+brand: print_my_design
+checked_at: '2026-09-12T02:14:04+00:00'
+reachable: false
+api_base: https://printmydesign.jonathanarvay.com/api/v4
+api_authenticated: false
+capabilities:
+  can_browse: false
+  can_transact: false
+  can_fulfil: false
+  has_price_confidence: false
+  has_subscriber_capture: false
+evidence:
+  can_browse: 'GET https://printmydesign.jonathanarvay.com failed: ProxyError'
+  can_transact: PMD_API_TOKEN not set; cannot probe. Treated as absent.
+  can_fulfil: PMD_API_TOKEN not set; cannot probe. Treated as absent.
+  has_price_confidence: PMD_API_TOKEN not set; cannot probe. Treated as absent.
+  has_subscriber_capture: PMD_API_TOKEN not set; cannot probe. Treated as absent.
+calls: []
