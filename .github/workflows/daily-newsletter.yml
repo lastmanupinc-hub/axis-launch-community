@@ -101,6 +101,11 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Record run health
+        id: health
+        continue-on-error: true          # record and report; the gate is the final step
+        run: python3 marketing/scripts/report_health.py --kind newsletter --date ${{ steps.build.outputs.date }}
+
       - name: Commit the archive
         if: steps.build.outputs.decision != 'hold'
         run: |
@@ -121,6 +126,12 @@ jobs:
           name: newsletter-${{ steps.build.outputs.date }}
           path: marketing/out/newsletter/${{ steps.build.outputs.date }}/
           retention-days: 30
+      - name: Fail if the system has been unable to do its job
+        # Separate from the recording step so the health record is committed either way.
+        # This fails only on "broken" - unreachable, unauthenticated, a dry pipeline, a
+        # capability regression. A known blocker is "waiting" and never reaches here.
+        run: python3 marketing/scripts/report_health.py --kind newsletter --date ${{ steps.build.outputs.date }} --no-write
+
 
   send:
     needs: build

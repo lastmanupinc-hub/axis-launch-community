@@ -69,7 +69,7 @@ for t in guards sources config calendar; do python3 marketing/tests/test_$t.py; 
 |---|---|---|
 | `daily-newsletter.yml` | 11:12 UTC daily | Builds the issue, commits the archive, uploads an artifact, then dispatches via the `newsletter-send` environment. |
 | `daily-ads.yml` | 12:07 UTC daily | Builds the ad set, renders creative at three ratios, commits both, then offers them via the `ads-publish` environment. |
-| `marketing-ci.yml` | every PR | Runs all 144 tests plus a 14-day ad build and an offline newsletter build. |
+| `marketing-ci.yml` | every PR | Runs all 155 tests plus a 14-day ad build and an offline newsletter build. |
 
 ### Two independent safety switches
 

@@ -245,6 +245,104 @@ def test_the_current_catalogue_records_its_provenance():
     assert cat["defaults"]["verified"] == bool(cat.get("generated_from_live_api"))
 
 
+# --- run health: the difference between waiting and broken -------------------
+
+from lib import health  # noqa: E402
+
+
+def runs(n, kind="ads", **flags):
+    base = {"product_reachable": True, "api_authenticated": True,
+            "catalogue_live": True, "produced": True, "capabilities": {}}
+    base.update(flags)
+    return [dict(base, date=f"2026-09-{i + 1:02d}", kind=kind) for i in range(n)]
+
+
+def test_a_healthy_run_reports_nothing():
+    assert health.assess(history=runs(5)) == []
+
+
+def test_a_known_blocker_never_alarms():
+    """Ads not publishing because checkout takes no money is the system declining on
+    purpose. Alarming on it would train everyone to ignore the alarm."""
+    blocked = runs(20, produced=True)
+    for r in blocked:
+        r["dispatched"] = False
+        r["blocked_by"] = ["cannot-transact"]
+    assert health.ok(health.assess(history=blocked))
+
+
+def test_being_unreachable_notes_before_it_fails():
+    two = health.assess(history=runs(2, product_reachable=False))
+    assert [f.severity for f in two if f.condition == "product_unreachable"] == ["note"]
+
+
+def test_being_unreachable_long_enough_fails():
+    three = health.assess(history=runs(3, product_reachable=False))
+    hit = [f for f in three if f.condition == "product_unreachable"]
+    assert hit and hit[0].severity == "fail"
+    assert not health.ok(three)
+
+
+def test_a_dry_newsletter_eventually_fails():
+    dry = runs(health.THRESHOLDS["newsletter_dry"], kind="newsletter", produced=False)
+    hit = [f for f in health.assess(history=dry) if f.condition == "newsletter_dry"]
+    assert hit and hit[0].severity == "fail"
+
+
+def test_a_single_quiet_day_is_not_a_dry_pipeline():
+    mixed = runs(6, kind="newsletter")
+    mixed[-1]["produced"] = False
+    assert health.ok(health.assess(history=mixed))
+
+
+def test_a_capability_regression_fails_immediately():
+    hist = runs(2)
+    hist[0]["capabilities"] = {"can_transact": True}
+    hist[1]["capabilities"] = {"can_transact": False}
+    hit = [f for f in health.assess(history=hist) if f.condition == "capability_regression"]
+    assert hit and hit[0].severity == "fail" and hit[0].streak == 1
+
+
+def test_going_blind_is_not_reported_as_a_regression():
+    """A capability vanishing because we cannot see the product is the blindness, and is
+    already reported as product_unreachable. Reporting it twice, once as a regression,
+    would send someone hunting for a bug that is not there."""
+    hist = runs(2)
+    hist[0]["capabilities"] = {"can_transact": True}
+    hist[1].update({"product_reachable": False, "capabilities": {}})
+    assert not [f for f in health.assess(history=hist)
+                if f.condition == "capability_regression"]
+
+
+def test_a_capability_appearing_is_not_a_regression():
+    hist = runs(2)
+    hist[0]["capabilities"] = {"can_transact": False}
+    hist[1]["capabilities"] = {"can_transact": True}
+    assert not [f for f in health.assess(history=hist)
+                if f.condition == "capability_regression"]
+
+
+def test_recording_replaces_the_same_date_and_kind():
+    import tempfile
+    from pathlib import Path as P
+    original = health._path
+    with tempfile.TemporaryDirectory() as tmp:
+        health._path = lambda: P(tmp) / "health.json"
+        try:
+            health.record(health.RunRecord(date="2026-09-12", kind="ads", produced=False))
+            health.record(health.RunRecord(date="2026-09-12", kind="ads", produced=True))
+            hist = health.load()
+            assert len(hist) == 1 and hist[0]["produced"] is True
+            health.record(health.RunRecord(date="2026-09-12", kind="newsletter"))
+            assert len(health.load()) == 2      # a different kind is a different record
+        finally:
+            health._path = original
+
+
+def test_no_history_reports_nothing():
+    assert health.assess(history=[]) == []
+
+
 if __name__ == "__main__":
     import traceback
     fns = [(n, f) for n, f in sorted(globals().items())

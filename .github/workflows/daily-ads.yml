@@ -107,6 +107,11 @@ jobs:
             cat "marketing/out/ads/${{ steps.build.outputs.date }}/review.md" 2>/dev/null || true
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Record run health
+        id: health
+        continue-on-error: true          # record and report; the gate is the final step
+        run: python3 marketing/scripts/report_health.py --kind ads --date ${{ steps.build.outputs.date }}
+
       - name: Commit the set
         run: |
           git config user.name  "github-actions[bot]"
@@ -125,6 +130,12 @@ jobs:
           name: ads-${{ steps.build.outputs.date }}
           path: marketing/out/ads/${{ steps.build.outputs.date }}/
           retention-days: 30
+      - name: Fail if the system has been unable to do its job
+        # Separate from the recording step so the health record is committed either way.
+        # This fails only on "broken" - unreachable, unauthenticated, a dry pipeline, a
+        # capability regression. A known blocker is "waiting" and never reaches here.
+        run: python3 marketing/scripts/report_health.py --kind ads --date ${{ steps.build.outputs.date }} --no-write
+
 
   publish:
     needs: build

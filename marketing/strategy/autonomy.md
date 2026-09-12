@@ -13,6 +13,7 @@ accounting of how close that is, what closes the remaining gaps, and what will n
 | Whether anything ships | Probed, via the renderer status. |
 | Whether there is a list to send to | Probed, via a subscribe route. |
 | Whether a price can be trusted | Proved, by a quote coming back. |
+| Whether any of this is still working | Tracked across runs, and a red job when it is not. |
 | Whether the catalogue is verified | Derived: a catalogue read from the running shop is verified against it by definition; a repo file or a vendor export is not. |
 
 Each of those was a line in a YAML file that was only ever as fresh as somebody's memory.
@@ -37,6 +38,39 @@ Each is now a question the system asks the product.
 The asymmetry is deliberate. A false negative costs a quiet day. A false positive spends
 money advertising something that does not work, which is the failure that is expensive and
 hard to undo.
+
+## Degradation is visible, because silence is the real failure mode
+
+Every refusal here is a clean exit by design. A quiet day holds, a blocked send exits 0, an
+unpublishable ad set is not an error. Correct, and it creates one specific danger: the
+system can run degraded for weeks while every day still looks like a successful workflow
+run, and nobody finds out until someone thinks to look.
+
+So each run records what it managed to do, and `report_health.py` decides whether the
+pattern across recent runs is normal or wrong. The distinction it draws is the whole point:
+
+| | |
+|---|---|
+| **waiting** | A known blocker in `launch-readiness.yml`. Checkout takes no money, so the ads do not publish. Not a fault; the system correctly declining. **Never alarms.** |
+| **broken** | Something that was working has stopped, or something reachable is not. Credentials, connectivity, a capability regression, a content pipeline gone dry. **Always alarms**, after a grace period. |
+
+Alarming on *waiting* would train everyone to ignore the alarm, which is the only outcome
+worse than not having one.
+
+| Condition | Grace | Why that long |
+|---|---|---|
+| Cannot reach the product | 3 runs | One outage is not a problem; three days blind is. |
+| API not authenticating | 5 runs | Long enough to ride out a blip, short enough to catch an expired token. |
+| Catalogue never refreshed live | 10 runs | The last import still works; it is staleness, not breakage. |
+| Newsletter dry | 7 runs | A quiet week is plausible. A quiet fortnight means the sources died. |
+| A capability regressed | none | Something that worked stopped. There is no benign version of that. |
+
+The daily job records health, commits it, then fails on *broken* in a separate final step,
+so the record is kept either way and a red run in GitHub is the notification.
+
+One deliberate subtlety: a capability vanishing because the probe went blind is reported as
+blindness, not as a regression. Reporting it twice would send somebody hunting a bug that is
+not there.
 
 ## The capability merge, precisely
 
