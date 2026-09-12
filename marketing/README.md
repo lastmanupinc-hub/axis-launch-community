@@ -30,6 +30,7 @@ a set of compliance guards that are enforced in code.
 | Know why the calendar looks like it does | [`strategy/cadence.md`](strategy/cadence.md) |
 | Know why the daily send is Print My Design, not AXIS Launch | [`strategy/newsletter-cadence.md`](strategy/newsletter-cadence.md) |
 | Know what the product can and cannot honour | [`config/launch-readiness.yml`](config/launch-readiness.yml) |
+| Know what still needs a human | [`strategy/autonomy.md`](strategy/autonomy.md) |
 | Know what we are and are not allowed to say | [`strategy/compliance.md`](strategy/compliance.md) |
 | Understand the tone system | [`strategy/value-ladder.md`](strategy/value-ladder.md) |
 | Write or edit a hook | [`config/hooks.yml`](config/hooks.yml) |
@@ -68,7 +69,7 @@ for t in guards sources config calendar; do python3 marketing/tests/test_$t.py; 
 |---|---|---|
 | `daily-newsletter.yml` | 11:12 UTC daily | Builds the issue, commits the archive, uploads an artifact, then dispatches via the `newsletter-send` environment. |
 | `daily-ads.yml` | 12:07 UTC daily | Builds the ad set, renders creative at three ratios, commits both, then offers them via the `ads-publish` environment. |
-| `marketing-ci.yml` | every PR | Runs all 124 tests plus a 14-day ad build and an offline newsletter build. |
+| `marketing-ci.yml` | every PR | Runs all 144 tests plus a 14-day ad build and an offline newsletter build. |
 
 ### Two independent safety switches
 

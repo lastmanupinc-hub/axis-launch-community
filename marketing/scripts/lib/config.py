@@ -77,8 +77,56 @@ def launch_readiness() -> dict:
     return _load(CONFIG_DIR / "launch-readiness.yml")
 
 
-def capabilities(brand_key: str) -> dict:
-    return (launch_readiness().get(brand_key) or {}).get("capabilities", {})
+@functools.lru_cache(maxsize=None)
+def detected_readiness() -> dict:
+    path = CONFIG_DIR / "launch-readiness.detected.yml"
+    if not path.exists():
+        return {}
+    try:
+        return _load(path)
+    except ConfigError:
+        return {}
+
+
+# A probe older than this is not evidence about the product as it is now.
+DETECTION_MAX_AGE_HOURS = 36
+
+
+def capabilities(brand_key: str, *, refresh: bool = False) -> dict:
+    """What the product can do: the declared baseline, overridden by a fresh probe.
+
+    See scripts/probe_capabilities.py for the merge rule. The short version: a capability is
+    true only when something positively says so, and blindness reads as "stop".
+    """
+    if refresh:
+        detected_readiness.cache_clear()
+    declared = dict((launch_readiness().get(brand_key) or {}).get("capabilities", {}))
+
+    probe = detected_readiness()
+    if not probe or probe.get("brand") != brand_key:
+        return declared
+    if not probe.get("reachable"):
+        return declared                      # blind: the conservative baseline stands
+    if _probe_is_stale(probe.get("checked_at")):
+        return declared
+
+    for cap, value in (probe.get("capabilities") or {}).items():
+        declared[cap] = bool(value)
+    return declared
+
+
+def _probe_is_stale(checked_at: str | None) -> bool:
+    if not checked_at:
+        return True
+    import datetime as dt
+    try:
+        when = dt.datetime.fromisoformat(str(checked_at).replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=dt.timezone.utc)
+    age = dt.datetime.now(dt.timezone.utc) - when
+    return age > dt.timedelta(hours=DETECTION_MAX_AGE_HOURS)
 
 
 @functools.lru_cache(maxsize=None)

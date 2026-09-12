@@ -53,6 +53,21 @@ jobs:
           python3 marketing/tests/test_sources.py
           python3 marketing/tests/test_config.py
 
+      - name: Probe what the product can actually do
+        env:
+          PMD_API_BASE: ${{ vars.PMD_API_BASE }}
+          PMD_API_TOKEN: ${{ secrets.PMD_API_TOKEN }}
+        run: python3 marketing/scripts/probe_capabilities.py
+
+      - name: Refresh the catalogue from the live shop
+        env:
+          PMD_API_BASE: ${{ vars.PMD_API_BASE }}
+          PMD_API_TOKEN: ${{ secrets.PMD_API_TOKEN }}
+        # Refuses to write an empty catalogue, so a bad token or an unseeded table leaves
+        # the previous one standing rather than blanking the ads. Never fails the job: a
+        # stale catalogue is worth less than a fresh one and far more than no run at all.
+        run: python3 marketing/scripts/import_catalogue.py --api || echo "catalogue unchanged"
+
       - name: Build issue
         id: build
         env:
@@ -63,6 +78,8 @@ jobs:
           UNSUBSCRIBE_URL: ${{ vars.UNSUBSCRIBE_URL }}
           PREFERENCES_URL: ${{ vars.PREFERENCES_URL }}
           CONSENT_NOTE: ${{ vars.CONSENT_NOTE }}
+          PMD_API_BASE: ${{ vars.PMD_API_BASE }}
+          PMD_API_TOKEN: ${{ secrets.PMD_API_TOKEN }}
         run: |
           DATE="${{ github.event.inputs.date }}"
           DATE="${DATE:-$(date -u +%F)}"
@@ -89,7 +106,8 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add marketing/out marketing/queue
+          git add marketing/out marketing/queue marketing/config/products.yml \
+                  marketing/config/launch-readiness.detected.yml
           if git diff --cached --quiet; then
             echo "nothing to commit"
           else

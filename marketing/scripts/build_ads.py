@@ -28,7 +28,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import config, copy as C, guards, planner  # noqa: E402
+from lib import config, copy as C, guards, planner, pmd_api  # noqa: E402
 
 BRAND = "print_my_design"
 ROTATION_FILE = config.OUT_DIR / ".hook-rotation.json"
@@ -128,31 +128,71 @@ def ladder_quota(plan: planner.DayPlan, n: int) -> list[str]:
 
 
 UNAVAILABLE_SLOTS_BY_CAPABILITY = {
-    "has_price_confidence": {"price", "price_high"},
     "can_fulfil": {"turnaround", "deadline"},
 }
+PRICE_SLOTS = {"price", "price_high"}
 
 
-def unavailable_slots() -> set[str]:
+def fetch_prices(api: pmd_api.PmdApi | None = None) -> tuple[dict[str, pmd_api.Quote], list[dict]]:
+    """Ask the pricing engine for a real price per catalogue product, at build time.
+
+    This is the difference between advertising a number somebody typed into a config file
+    and advertising one the pricing service will stand behind. The service applies
+    max(marketReference, vendorCost x floor) and refuses - 422, no_cost_basis - rather than
+    guess when it has no cost samples. That refusal is carried straight through: no quote
+    means no price in the ad, and every hook needing one drops out of the candidate pool.
+
+    A product can only be quoted if it carries a `variant_key`. Products imported from the
+    storefront's hardcoded catalogue have none, because a variant key belongs to the
+    catalogue-variants table, not to the UI. Those simply go unpriced rather than being
+    quoted against a key that does not exist.
+    """
+    api = api or pmd_api.PmdApi()
+    prices: dict[str, pmd_api.Quote] = {}
+    notes: list[dict] = []
+    for key, product in config.products()["products"].items():
+        variant = product.get("variant_key")
+        if not variant:
+            notes.append({"product": key, "priced": False,
+                          "reason": "no variant_key; nothing to quote"})
+            continue
+        quantity = int(product.get("qty_anchor") or 1)
+        quote, res = api.quote(variant, quantity)
+        if quote:
+            prices[key] = quote
+            notes.append({"product": key, "priced": True, "variant": variant,
+                          "quantity": quantity, "price": round(quote.price, 2),
+                          "currency": quote.currency,
+                          "floor_applied": quote.floor_applied})
+        else:
+            notes.append({"product": key, "priced": False, "variant": variant,
+                          "reason": res.detail or f"HTTP {res.status}"})
+    return prices, notes
+
+
+def unavailable_slots(prices: dict[str, pmd_api.Quote] | None = None) -> set[str]:
     """Slots that cannot be filled truthfully today.
 
-    A hook needing {price} cannot run while no price has been reconciled against vendor
-    cost; one needing {turnaround} cannot run while nothing ships. Rather than fail the
-    build on an unfilled slot, those hooks are simply not candidates yet.
+    A hook needing {turnaround} cannot run while nothing ships. A hook needing {price} can
+    run only if the pricing engine actually returned a price for at least one product -
+    product selection is then constrained to the priced ones.
     """
     caps = config.capabilities(BRAND)
     out: set[str] = set()
     for capability, slots in UNAVAILABLE_SLOTS_BY_CAPABILITY.items():
         if caps.get(capability) is not True:
             out |= slots
+    if not prices:
+        out |= PRICE_SLOTS
     return out
 
 
-def candidate_hooks(plan: planner.DayPlan, rung: str) -> list[tuple[str, dict, str]]:
+def candidate_hooks(plan: planner.DayPlan, rung: str,
+                    prices: dict | None = None) -> list[tuple[str, dict, str]]:
     """(family, pattern, fill) tuples matching the day's families and this rung."""
     library = config.hooks()["families"]
     families = plan.families or list(library)
-    blocked = unavailable_slots()
+    blocked = unavailable_slots(prices)
 
     def usable(fill: str) -> bool:
         return not (set(re.findall(r"\{([a-z_]+)\}", fill)) & blocked)
@@ -196,7 +236,8 @@ def product_affinity(text: str) -> list[str]:
 
 
 def pick_product(plan: planner.DayPlan, rng: random.Random, used: set[str],
-                 affinity: list[str] | None = None) -> tuple[str, dict]:
+                 affinity: list[str] | None = None,
+                 require_priced: set[str] | None = None) -> tuple[str, dict]:
     catalogue = config.products()["products"]
     # 1. If the hook named a product, the ad is about that product. Non-negotiable.
     for key in affinity or []:
@@ -204,6 +245,10 @@ def pick_product(plan: planner.DayPlan, rng: random.Random, used: set[str],
             return key, catalogue[key]
     lead = [k for k in plan.lead_products if k in catalogue]
     pool = lead or list(catalogue)
+    if require_priced:
+        # This hook quotes a price, so it may only be built against a product the pricing
+        # engine actually priced.
+        pool = [k for k in pool if k in require_priced] or sorted(require_priced)
     fresh = [k for k in pool if k not in used]
     if not fresh:
         # Lead products exhausted: widen to the rest of the catalogue before repeating one.
@@ -216,21 +261,25 @@ def pick_product(plan: planner.DayPlan, rng: random.Random, used: set[str],
 # --------------------------------------------------------------------------- assembly
 
 def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, fill: str,
-                  product_key: str, product: dict, index: int) -> dict:
+                  product_key: str, product: dict, index: int,
+                  quote: pmd_api.Quote | None = None) -> dict:
     lim = config.limits("ads")
     currency = config.products()["defaults"]["currency"]
     offer = offer_for_rung(plan, rung)
 
-    blocked = unavailable_slots()
+    blocked = unavailable_slots({product_key: quote} if quote else None)
     values = {
         "product": product["name"].lower(),
         "qty": product.get("qty_anchor", ""),
         "audience": "small shops",
     }
-    if "price" not in blocked:
-        values["price"] = C.money(product.get("price_from", 0), currency)
-        values["price_high"] = C.money(
-            C.round_price(product.get("price_from", 0) * 2.2), currency)
+    # The only price that may appear is one the pricing engine just returned. The config
+    # literal is never used for copy - it is a record of what the storefront shows, not a
+    # number this system is willing to stand behind.
+    if quote and "price" not in blocked:
+        currency = quote.currency
+        values["price"] = C.money(quote.price, currency)
+        values["price_high"] = C.money(C.round_price(quote.price * 2.2), currency)
     if "turnaround" not in blocked:
         values["turnaround"] = product.get("turnaround", "")
         values["deadline"] = (offer or {}).get("ends", "")
@@ -267,8 +316,8 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
         headline_raw = f"{offer['value']}% off {short.lower()}"
     elif rung == "proof" and product.get("turnaround") and caps.get("can_fulfil"):
         headline_raw = f"{short} in {compact_turnaround(product['turnaround'])}"
-    elif product.get("price_from") and caps.get("has_price_confidence"):
-        headline_raw = f"{short} from {C.money(product['price_from'], currency)}"
+    elif quote:
+        headline_raw = f"{short} from {C.money(quote.price, quote.currency)}"
     elif product.get("stocks"):
         headline_raw = f"{short}, {len(product['stocks'])} stocks"
     elif product.get("sizes"):
@@ -311,6 +360,10 @@ def build_variant(plan: planner.DayPlan, rung: str, family: str, pattern: dict, 
         "product": product_key,
         "offer": plan.offer_key if offer else None,
         "unfilled_slots": missing,
+        "price": ({"amount": round(quote.price, 2), "currency": quote.currency,
+                   "variant_key": quote.variant_key, "quantity": quote.quantity,
+                   "floor_applied": quote.floor_applied, "source": quote.source}
+                  if quote else None),
         "meta": {
             "primary_text": primary_text,
             "primary_text_prefold": C.truncate(primary_text, lim["meta_primary_text_max"]),
@@ -389,6 +442,11 @@ def build_day(date: dt.date, rotation: dict) -> tuple[dict, guards.GuardReport]:
     rungs = ladder_quota(plan, n)
     avoid_fills, avoid_patterns = recently_used(rotation)
 
+    # Ask the pricing engine before writing a word. Whatever it returns - a price, or a
+    # refusal - decides what today's copy is allowed to say.
+    api = pmd_api.PmdApi()
+    prices, price_notes = fetch_prices(api)
+
     variants: list[dict] = []
     used_products: set[str] = set()
     used_hooks: set[str] = set()
@@ -397,7 +455,7 @@ def build_day(date: dt.date, rotation: dict) -> tuple[dict, guards.GuardReport]:
     reused = 0
 
     for index, rung in enumerate(rungs, start=1):
-        pool = candidate_hooks(plan, rung)
+        pool = candidate_hooks(plan, rung, prices)
         if not pool:
             continue
         today_ok = [c for c in pool
@@ -424,11 +482,14 @@ def build_day(date: dt.date, rotation: dict) -> tuple[dict, guards.GuardReport]:
         used_hooks.add(pattern["id"])
         used_fills.add(fill_key(pattern["id"], fill))
         family_counts[family] = family_counts.get(family, 0) + 1
-        product_key, product = pick_product(plan, rng, used_products,
-                                            affinity=product_affinity(fill))
+        needs_price = bool(set(re.findall(r"\{([a-z_]+)\}", fill)) & PRICE_SLOTS)
+        product_key, product = pick_product(
+            plan, rng, used_products, affinity=product_affinity(fill),
+            require_priced=set(prices) if needs_price else None)
         used_products.add(product_key)
         variants.append(build_variant(plan, rung, family, pattern, fill,
-                                      product_key, product, index))
+                                      product_key, product, index,
+                                      quote=prices.get(product_key)))
 
     report = guards.GuardReport()
     report.extend(guards.check_ladder_mix([v["ladder"] for v in variants],
@@ -462,15 +523,17 @@ def build_day(date: dt.date, rotation: dict) -> tuple[dict, guards.GuardReport]:
                 "unfilled-slot", "fail", where=v["id"],
                 message=f"template slots left unfilled: {', '.join(v['unfilled_slots'])}"))
 
-    unverified = [v["product"] for v in variants
-                  if not config.products()["products"][v["product"]].get(
-                      "verified", config.products()["defaults"].get("verified", False))]
+    catalogue = config.products()
+    live_catalogue = bool(catalogue.get("generated_from_live_api"))
+    unverified = [] if live_catalogue else sorted({v["product"] for v in variants})
     if unverified:
         report.add(guards.Violation(
             "unverified-catalogue", "warn", where="products.yml",
-            message=("prices/turnarounds not yet verified against the live shop for: "
-                     + ", ".join(sorted(set(unverified)))
-                     + ". Proofing is fine; publishing live is blocked.")))
+            message=("the catalogue was imported from "
+                     f"{catalogue.get('generated_from', 'an offline source')}, not from the "
+                     "running shop, so these products are not confirmed to match what a "
+                     "visitor sees: " + ", ".join(unverified)
+                     + ". Run import_catalogue.py --api to verify. Proofing is fine.")))
 
     mix: dict[str, int] = {}
     for v in variants:
@@ -480,6 +543,13 @@ def build_day(date: dt.date, rotation: dict) -> tuple[dict, guards.GuardReport]:
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "brand": BRAND,
         "plan": plan.as_dict(),
+        "pricing": {
+            "api_base": api.base,
+            "authenticated": api.configured,
+            "priced_products": sorted(prices),
+            "notes": price_notes,
+            "ads_carrying_a_price": sum(1 for v in variants if v.get("price")),
+        },
         "ladder_mix": mix,
         "ladder_mix_pct": {k: round(100 * v / max(1, len(variants)))
                            for k, v in sorted(mix.items())},

@@ -35,6 +35,9 @@ jobs:
       - name: Catalogue importer round-trips
         run: python3 marketing/tests/test_importer.py
 
+      - name: Unattended operation fails closed
+        run: python3 marketing/tests/test_autonomy.py
+
       - name: Builders stay inside what the product can honour
         env:
           PMD_POSTAL_ADDRESS: "CI placeholder, 1 Example Street, Example City"

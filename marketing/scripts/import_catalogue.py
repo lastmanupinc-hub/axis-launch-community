@@ -17,7 +17,13 @@ Two sources, in priority order:
                               heading: commit aba0e82 wired Printful because its v1 catalog
                               needs no authentication and returns real, FLAT-RATE prices, so
                               a price here is cost-justified rather than a placeholder.
-  2. --pmd-repo <path>        The storefront's own ui/src/catalog/productCatalog.ts. This is
+  2. --api                    The live catalogue, GET /v4/catalog/products. This is the
+                              source that lets the system run unattended: update the site,
+                              and the next daily run picks the change up with no edit here.
+                              Needs PMD_API_TOKEN. Returns nothing while the products table
+                              is unseeded, and an empty catalogue is refused rather than
+                              written, so a bad token can never blank the config.
+  3. --pmd-repo <path>        The storefront's own ui/src/catalog/productCatalog.ts. This is
                               what renders today. Its prices are hardcoded literals never
                               checked against vendor cost, so they import as placeholders.
 
@@ -38,7 +44,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import config  # noqa: E402
+from lib import config, pmd_api  # noqa: E402
 
 CATALOGUE_REL = "plugins/pmd-customizer/ui/src/catalog/productCatalog.ts"
 
@@ -159,8 +165,51 @@ def parse_pmd_catalogue(repo: Path) -> tuple[list[dict], str]:
             "stocks": _labels(block, "stocks"),
             "finishes": _labels(block, "finishes"),
             "sizes": _labels(block, "sizes"),
+            # The storefront's hardcoded catalogue has no variant keys - those belong to
+            # the catalogue-variants table. Without one a product cannot be quoted, so it
+            # simply carries no price rather than being quoted against an invented key.
+            "variant_key": None,
         })
     return products, f"{path.relative_to(repo)} @ {repo.name}"
+
+
+def parse_api(api: pmd_api.PmdApi | None = None) -> tuple[list[dict], str]:
+    """The live catalogue. Whatever the product is serving right now is what we advertise."""
+    api = api or pmd_api.PmdApi()
+    rows, res = api.catalogue()
+    if not res.ok and not rows:
+        raise SystemExit(f"catalogue API unavailable: {res.detail or res.status}\n"
+                         "Set PMD_API_TOKEN, or pass --pmd-repo to read the repo instead.")
+    products: list[dict] = []
+    for row in rows:
+        slug = row.get("slug") or row.get("sku") or str(row.get("id") or "")
+        if not slug:
+            continue
+        if row.get("status") not in (None, "active"):
+            continue
+        tiers = row.get("quantities") or row.get("qty_tiers") or [1]
+        cents = row.get("price_cents") or row.get("starting_price_cents")
+        price = (float(cents) / 100.0 if cents is not None
+                 else (float(row["starting_price"]) if row.get("starting_price") else None))
+        products.append({
+            "key": str(slug).replace("-", "_"),
+            "name": row.get("name") or row.get("title") or str(slug).title(),
+            "slug": str(slug),
+            "path": f"/products/{slug}",
+            "short_description": row.get("short_description") or "",
+            "qty_tiers": list(tiers),
+            "qty_anchor": tiers[0] if tiers else 1,
+            "price_from": price,
+            # A price from the catalogue API is still a stored number, not a live quote.
+            # Only scripts/build_ads.py asking /pricing/quote produces an advertisable one.
+            "price_basis": "ui_placeholder",
+            "currency": row.get("currency") or "USD",
+            "variant_key": row.get("variant_key") or row.get("default_variant_key"),
+            "stocks": row.get("stocks") or [],
+            "finishes": row.get("finishes") or [],
+            "sizes": row.get("sizes") or [],
+        })
+    return products, f"{api.base}/catalog/products"
 
 
 def parse_printful(export: Path) -> tuple[list[dict], str]:
@@ -184,6 +233,7 @@ def parse_printful(export: Path) -> tuple[list[dict], str]:
             "price_basis": "vendor_quoted",
             "currency": row.get("currency") or "USD",
             "flat_rate": True,
+            "variant_key": row.get("variant_key"),
             "variants": 0,
         })
         entry["variants"] += 1
@@ -200,6 +250,15 @@ def short_name(name: str, limit: int) -> str:
         return name
     head = re.split(r"\s+(?:&|and)\s+", name)[0]
     return head[:limit].rstrip()
+
+
+def source_is_live(source: str) -> bool:
+    """Only the live API proves the catalogue matches what a visitor sees.
+
+    A repo file is what the code says; a Printful export is what a vendor sells. Neither is
+    evidence about the running shop, so neither marks a product verified.
+    """
+    return "/catalog/products" in source
 
 
 def build_document(products: list[dict], overrides: dict, source: str) -> dict:
@@ -234,6 +293,10 @@ def build_document(products: list[dict], overrides: dict, source: str) -> dict:
             "keywords": extra.get("keywords") or [p["slug"].replace("-", " ")],
             "image_style": extra.get("image_style") or ["product_on_white"],
         })
+        # An explicit override wins: it is how you pin a known variant key before the
+        # catalogue starts publishing them.
+        variant = extra.get("variant_key") or p.get("variant_key")
+        record["variant_key"] = variant
         for axis in ("sizes", "stocks", "finishes"):
             if p.get(axis):
                 record[axis] = p[axis]
@@ -243,12 +306,16 @@ def build_document(products: list[dict], overrides: dict, source: str) -> dict:
             [p["short_description"]] if p.get("short_description") else [])
         out_products[p["key"]] = record
 
+    live = source_is_live(source)
     doc = {
         "version": 1,
         "generated_from": source,
+        "generated_from_live_api": live,
         "defaults": {
             "currency": products[0]["currency"] if products else "USD",
-            "verified": False,
+            # Derived, not hand-set: a catalogue read from the running shop is verified
+            # against the running shop by definition. Anything else is not.
+            "verified": live,
             "price_basis": products[0]["price_basis"] if products else "ui_placeholder",
             "path_template": "/products/{slug}",
         },
@@ -269,6 +336,8 @@ def render(doc: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--api", action="store_true",
+                    help="read the live catalogue over the API (needs PMD_API_TOKEN)")
     ap.add_argument("--pmd-repo", help="path to a PMD-MASTER checkout")
     ap.add_argument("--printful", help="path to a Printful catalogue export (JSON)")
     ap.add_argument("--check", action="store_true",
@@ -277,13 +346,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.printful:
         products, source = parse_printful(Path(args.printful))
+    elif args.api:
+        products, source = parse_api()
     elif args.pmd_repo:
         products, source = parse_pmd_catalogue(Path(args.pmd_repo).resolve())
     else:
-        ap.error("pass --pmd-repo or --printful")
+        ap.error("pass --api, --pmd-repo or --printful")
 
     if not products:
+        # Refusing here is the whole safety property of an unattended import: a bad token,
+        # an unseeded table or a transient 500 must never blank the catalogue and take the
+        # ads down with it. The previous catalogue stands until a real one replaces it.
         print("no products parsed; refusing to write an empty catalogue")
+        print("         the existing products.yml stands unchanged.")
         return 1
 
     overrides_path = config.CONFIG_DIR / "products.overrides.yml"

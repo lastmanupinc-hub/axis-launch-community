@@ -59,6 +59,7 @@ products:
     - in_hand
     - stack_macro
     - product_on_white
+    variant_key: null
     sizes:
     - 3.5" × 2"
     - 2.5" × 2.5"
@@ -107,6 +108,7 @@ products:
     - flat_lay
     - in_hand
     - product_on_white
+    variant_key: null
     sizes:
     - 4" × 6"
     - 5" × 7"
@@ -150,6 +152,7 @@ products:
     - product_on_white
     - lifestyle_in_context
     - flat_lay
+    variant_key: null
     sizes:
     - 8.5" × 11"
     - 5.5" × 8.5"
@@ -194,6 +197,7 @@ products:
     - detail_macro
     - product_on_white
     - lifestyle_in_context
+    variant_key: null
     sizes:
     - 2" × 2"
     - 3" × 3"
@@ -237,6 +241,7 @@ products:
     - install_shot
     - lifestyle_in_context
     - product_on_white
+    variant_key: null
     sizes:
     - 18" × 24"
     - 24" × 36"
@@ -282,6 +287,7 @@ products:
     - flat_lay
     - detail_macro
     - in_hand
+    variant_key: null
     sizes:
     - 5" × 7"
     - A6 (4.1" × 5.8")
