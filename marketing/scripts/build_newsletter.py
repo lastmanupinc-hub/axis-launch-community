@@ -403,9 +403,21 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_write:
         written = write_outputs(payload, rendered)
         moved = retire_queue_items(payload)
+        # Record what went out so tomorrow's issue does not repeat it, and so issue
+        # numbers advance. The workflow commits marketing/out, which is what carries this
+        # state from one run to the next.
+        published = [sources.Item(**{k: v for k, v in entry.items()
+                                     if k in sources.Item.__annotations__})
+                     for section in payload["sections"] for entry in section["entries"]]
+        if payload.get("lead_item"):
+            published.append(sources.Item(**{
+                k: v for k, v in payload["lead_item"].items()
+                if k in sources.Item.__annotations__}))
+        sources.record_history(payload["issue"]["date"], published)
         print(f"  wrote {len(written)} files to "
               f"{written[0].parent.relative_to(config.REPO_ROOT)}"
-              + (f"; retired {moved} queue item(s)" if moved else ""))
+              + (f"; retired {moved} queue item(s)" if moved else "")
+              + f"; recorded {len(published)} item(s) against future dedupe")
 
     if report.failures:
         print("\n" + report.summary())

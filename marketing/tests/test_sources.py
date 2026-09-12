@@ -86,6 +86,67 @@ def test_harvest_never_raises_when_everything_is_down():
     assert all(isinstance(s.ok, bool) for s in h.statuses)
 
 
+# --- cross-issue dedupe must actually persist (regression) -------------------
+
+def test_history_round_trip_suppresses_a_repeat(tmp_path=None):
+    """record_history was defined but never called, so every issue re-sent the same
+    items and the issue number never advanced. This holds that fix in place."""
+    import json, tempfile
+    from pathlib import Path as P
+    original = sources._history_path
+    with tempfile.TemporaryDirectory() as tmp:
+        fake = P(tmp) / "index.json"
+        sources._history_path = lambda: fake
+        try:
+            assert sources.load_history() == []
+            first = [item("https://x.com/a"), item("https://x.com/b")]
+            kept, dropped = sources.drop_seen(first)
+            assert len(kept) == 2 and dropped == 0
+
+            sources.record_history("2026-09-11", first)
+            assert len(sources.load_history()) == 1
+
+            # Same items tomorrow: both suppressed.
+            kept, dropped = sources.drop_seen(first)
+            assert kept == [] and dropped == 2
+
+            # A new item still gets through.
+            kept, _ = sources.drop_seen(first + [item("https://x.com/c")])
+            assert [i.url for i in kept] == ["https://x.com/c"]
+        finally:
+            sources._history_path = original
+
+
+def test_history_matches_across_url_variants():
+    import tempfile
+    from pathlib import Path as P
+    original = sources._history_path
+    with tempfile.TemporaryDirectory() as tmp:
+        sources._history_path = lambda: P(tmp) / "index.json"
+        try:
+            sources.record_history("2026-09-11", [item("https://x.com/a")])
+            kept, dropped = sources.drop_seen([item("http://www.x.com/a/?utm_source=rss")])
+            assert kept == [] and dropped == 1
+        finally:
+            sources._history_path = original
+
+
+def test_history_is_trimmed_to_the_lookback_window():
+    import tempfile
+    from pathlib import Path as P
+    from lib import config
+    original = sources._history_path
+    limit = config.sources()["dedupe"]["lookback_issues"]
+    with tempfile.TemporaryDirectory() as tmp:
+        sources._history_path = lambda: P(tmp) / "index.json"
+        try:
+            for day in range(limit + 10):
+                sources.record_history(f"2026-01-{day + 1:02d}", [item(f"https://x.com/{day}")])
+            assert len(sources.load_history()) == limit
+        finally:
+            sources._history_path = original
+
+
 if __name__ == "__main__":
     import traceback
     fns = [(n, f) for n, f in sorted(globals().items())
