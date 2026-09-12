@@ -23,6 +23,30 @@ a set of compliance guards that are enforced in code.
               (dry run default)              (dry run default, ads created PAUSED)
 ```
 
+## Picking this up on a workstation
+
+This system was built by a **cloud session** — an ephemeral container with no `../key.txt`
+and a network policy that refuses arbitrary hosts. `config/launch-readiness.detected.yml`
+records the result: `ProxyError`. Everything here is written to run where the key and the
+network are, and two steps have therefore never actually run:
+
+| Run this | Gets you | Notes |
+|---|---|---|
+| `python3 marketing/scripts/generate_product_imagery.py` | 18 product photographs the ad creative already asks for | `--check` = plan + key labels, `--dry-run` = the prompts. Spends nothing. |
+| `python scripts/fetch_app_articles.py` *(sibling repo `axis-launch-platform`, same branch)* | The newsletter's "In their own words" citations | `--dry-run` doubles as a reachability probe; exit 2 = nothing was reachable |
+
+Neither is required. A missing photograph renders the plain type-on-ink ad; a missing
+`app-articles.json` renders an issue with no citation block. **Missing is the designed
+state, not a fault** — there is nothing to stub and no placeholder to add.
+
+**Review every generated photograph before committing it.** The prompts ban parcels,
+mailers, couriers and delivery, and ban prices, price tags and percentage signs, because
+`can_fulfil` and `can_transact` are both false — a photograph of a package makes a delivery
+promise as surely as the word does. `tests/test_builders.py` asserts the *prompt* still bans
+them, which is all a test can do. Only a person can see a parcel in the corner of a picture.
+
+Full detail: `brand/photography/README.md`, and the module docstring of each script.
+
 ## Start here
 
 | You want to | Read |
