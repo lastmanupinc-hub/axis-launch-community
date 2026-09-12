@@ -24,4 +24,18 @@ Required front matter: `title`, `brand`, `url`. Everything else is optional; `se
 After an item is published the build moves the file to `published/` with the issue date
 prepended, so the queue stays a to-do list rather than an archive.
 
-Worked examples live in `examples/`. They are not picked up by the builder.
+## Worked examples
+
+`examples/` holds three items, one per section, that are not picked up by the builder. To try
+the newsletter end to end with content in it:
+
+```bash
+cp marketing/queue/examples/*.md marketing/queue/
+PMD_POSTAL_ADDRESS="..." python3 marketing/scripts/build_newsletter.py --offline
+```
+
+That glob copies exactly the three example items and nothing else, which is why `examples/`
+deliberately has no README of its own — one would land here and overwrite this file.
+
+The build retires whatever it publishes into `published/`, so re-running after a successful
+build correctly produces a hold.
