@@ -66,6 +66,18 @@ def palette() -> dict:
     }
 
 
+def display_domain(brand_key: str = "print_my_design") -> str:
+    """The site address as a person would read it aloud.
+
+    From brands.yml, never a literal here: if the domain moves, the artwork follows the
+    same config every link already uses instead of quietly advertising the old address.
+    The scheme and any www. come off -- nobody types them and they cost width on a canvas
+    where the footnote is already competing for the same row.
+    """
+    site = config.brand(brand_key)["site"]
+    return re.sub(r"^https?://(www\.)?", "", site).rstrip("/")
+
+
 def fonts_present() -> bool:
     font_dir = config.BRAND_DIR / "fonts"
     return font_dir.exists() and any(font_dir.glob("*.woff2"))
@@ -133,6 +145,7 @@ def render_one(chromium: str, env: Environment, variant: dict, ratio: str,
         "support": "",
         "footer": creative["footer"],
         "cta": variant["meta"]["cta"],
+        "domain": display_domain(),
         "logo_src": (config.BRAND_DIR / "logo" / "print-my-design-mark.svg").as_uri(),
         "font_dir": (config.BRAND_DIR / "fonts").as_uri(),
         **scale_for(width, height, creative["headline"]),

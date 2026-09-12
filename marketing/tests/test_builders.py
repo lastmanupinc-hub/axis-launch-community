@@ -113,6 +113,65 @@ def test_the_send_is_blocked_while_there_is_no_list():
     assert v and v[0].rule == "no-subscriber-capture"
 
 
+# --------------------------------------------------------------- the creative itself
+
+def render_ctx(template="statement", footer="Free online editor", cta="Try the editor"):
+    """A rendered creative, as HTML, without needing Chromium.
+
+    The template is the last stop before a PNG, and a PNG is not greppable. Everything the
+    artwork must carry -- or must not -- is decided here in markup and CSS, so it is
+    testable here even though the image is not.
+    """
+    import render_creative as R
+    from jinja2 import Environment, FileSystemLoader, StrictUndefined
+    env = Environment(
+        loader=FileSystemLoader(str(config.REPO_ROOT / "marketing/creative/ad-templates")),
+        undefined=StrictUndefined, autoescape=False)
+    w = h = 1080
+    headline = "A headline of roughly ordinary length for a print advertisement."
+    return env.get_template("base.html.j2").render(
+        p=R.palette(), w=w, h=h, template=template, kicker="Business cards",
+        headline_html=R.emphasise(headline), support="", footer=footer, cta=cta,
+        domain=R.display_domain(),
+        logo_src=(config.BRAND_DIR / "logo" / "print-my-design-mark.svg").as_uri(),
+        font_dir=(config.BRAND_DIR / "fonts").as_uri(),
+        **R.scale_for(w, h, headline))
+
+
+def test_every_creative_carries_the_domain():
+    """An ad gets screenshotted and reposted away from every surface that carried a link.
+    At that point a CTA reading "Try the editor" is an instruction with no destination."""
+    assert "printmydesign.jonathanarvay.com" in render_ctx()
+
+
+def test_the_domain_comes_from_config_not_a_literal_in_the_renderer():
+    """If the site moves, the artwork must follow the same config every link already uses
+    rather than keep advertising the old address."""
+    import render_creative as R
+    site = config.brand("print_my_design")["site"]
+    assert R.display_domain() in site
+    assert "://" not in R.display_domain()
+
+
+def test_the_domain_survives_a_creative_with_no_call_to_action():
+    """Not every rung gets a CTA. The address is the one thing that is never optional."""
+    html = render_ctx(cta="")
+    assert "printmydesign.jonathanarvay.com" in html
+    assert 'class="cta' not in html
+
+
+def test_the_deadline_template_can_actually_reach_the_footnote():
+    """Regression: `.deadline .footnote` was written while the template class sat only on
+    .mid, and .footnote lives in .bottom -- a sibling. The selector matched nothing, so
+    every urgency ad rendered its deadline in the same grey as an ordinary footnote and
+    nothing errored. Scoping the class to <body> is what makes the rule reachable."""
+    html = render_ctx(template="deadline", footer="20% off until 30 September.")
+    assert '<body class="deadline">' in html
+    assert ".deadline .footnote" in html
+    body = html.split("</style>", 1)[1]
+    assert body.index('class="deadline"') < body.index('class="footnote"')
+
+
 if __name__ == "__main__":
     import traceback
     fns = [(n, f) for n, f in sorted(globals().items())

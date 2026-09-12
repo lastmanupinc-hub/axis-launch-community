@@ -31,18 +31,33 @@
   .support{margin-top:{{ (h/34)|round|int }}px;font-size:{{ body_px }}px;line-height:1.42;
            color:#D6D6DC;max-width:{{ (w*0.9)|round|int }}px}
   .bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:{{ (w/30)|round|int }}px}
-  .footnote{font-size:{{ foot_px }}px;line-height:1.4;color:var(--slate);max-width:{{ (w*0.62)|round|int }}px}
+  .footnote{font-size:{{ foot_px }}px;line-height:1.4;color:var(--slate);max-width:{{ (w*0.52)|round|int }}px}
+  .endcap{display:flex;flex-direction:column;align-items:flex-end;
+          gap:{{ (foot_px*0.55)|round|int }}px;flex:0 0 auto}
   .cta{background:var(--orange);color:var(--ink);font-weight:600;
        font-size:{{ cta_px }}px;padding:{{ (cta_px*0.62)|round|int }}px {{ (cta_px*1.15)|round|int }}px;
        border-radius:{{ (cta_px*0.42)|round|int }}px;white-space:nowrap}
+  /* The address, on the artwork itself. An ad is screenshotted, reposted and cropped out
+     of every surface that carried a link, and at that point the CTA is an instruction with
+     no destination. Set below the button rather than inside it: the button says what to do
+     and the domain says where, and merging them makes a pill too wide for a 9:16 canvas. */
+  .domain{font-size:{{ (foot_px*0.95)|round|int }}px;letter-spacing:{{ (foot_px*0.02)|round(1) }}px;
+          color:#D6D6DC;white-space:nowrap;font-weight:600}
   /* proof is never orange - brand/print-my-design.md */
   .proof{border-left:{{ (w/135)|round|int }}px solid var(--blue-bright);
          padding-left:{{ (w/34)|round|int }}px}
   .quote .headline{font-size:{{ (head_px*0.94)|round|int }}px}
   .quote .headline:before{content:'\201C';color:var(--orange)}
   .quote .headline:after{content:'\201D';color:var(--orange)}
+  /* Scoped to <body>, not to .mid. This rule was written as `.deadline .footnote` while
+     the only element carrying the template class was .mid -- and .footnote lives in
+     .bottom, a SIBLING of .mid, so the selector never matched anything and every deadline
+     ad rendered its deadline in the same grey as an ordinary footnote. Nothing errors when
+     a selector matches nothing, which is why it survived a visual review: the ad looked
+     fine, it just wasn't doing the one thing the urgency template exists to do. */
   .deadline .footnote{color:var(--orange-deep);font-weight:600}
 </style>
+<body class="{{ template }}">
 <div class="rule"></div>
 <div class="top">
   <img class="logo" src="{{ logo_src }}" alt="">
@@ -56,5 +71,8 @@
 </div>
 <div class="bottom">
   <div class="footnote">{{ footer }}</div>
-  {% if cta %}<div class="cta display">{{ cta }}</div>{% endif %}
+  <div class="endcap">
+    {% if cta %}<div class="cta display">{{ cta }}</div>{% endif %}
+    <div class="domain display">{{ domain }}</div>
+  </div>
 </div>
