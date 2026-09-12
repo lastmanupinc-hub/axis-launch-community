@@ -78,6 +78,34 @@ def display_domain(brand_key: str = "print_my_design") -> str:
     return re.sub(r"^https?://(www\.)?", "", site).rstrip("/")
 
 
+PHOTO_DIR = config.BRAND_DIR / "photography"
+
+
+def photo_for(slug: str, style: str) -> Path | None:
+    """The photograph this variant already asked for, if it has been generated.
+
+    build_ads.py has been choosing an image_style per variant since the first version and
+    writing it into ad-set.json, where nothing read it. This is the other end of that:
+    brand/photography/{slug}-{style}.png, produced by generate_product_imagery.py, which
+    needs a key and so cannot run in the daily job.
+
+    Returns None far more often than not, and that is the designed state -- the ad falls
+    back to the type-on-ink layout rather than to a placeholder or a broken <img>.
+    """
+    for ext in (".png", ".jpg", ".jpeg", ".webp"):
+        candidate = PHOTO_DIR / f"{slug}-{style}{ext}"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def mono_mark() -> str:
+    """The mono mark as inline SVG, sized by CSS rather than its own width/height."""
+    raw = (config.BRAND_DIR / "logo" / "print-my-design-mark-mono.svg").read_text(
+        encoding="utf-8")
+    return raw.replace(' width="512" height="512"', "", 1)
+
+
 def fonts_present() -> bool:
     font_dir = config.BRAND_DIR / "fonts"
     return font_dir.exists() and any(font_dir.glob("*.woff2"))
@@ -136,6 +164,7 @@ def render_one(chromium: str, env: Environment, variant: dict, ratio: str,
                out_dir: Path, date: str) -> Path | None:
     width, height = RATIOS[ratio]
     creative = variant["creative"]
+    photo = photo_for(variant.get("product", ""), creative.get("image_style", ""))
     ctx = {
         "p": palette(),
         "w": width, "h": height,
@@ -146,7 +175,18 @@ def render_one(chromium: str, env: Environment, variant: dict, ratio: str,
         "footer": creative["footer"],
         "cta": variant["meta"]["cta"],
         "domain": display_domain(),
-        "logo_src": (config.BRAND_DIR / "logo" / "print-my-design-mark.svg").as_uri(),
+        "photo_src": photo.as_uri() if photo else "",
+        # brand/print-my-design.md: the gradient mark only ever sits on ink or white, and
+        # the mono mark, in white, is what goes over a photograph. Not a preference -- the
+        # gradient loses both its colours against an arbitrary background.
+        #
+        # The mono file fills with currentColor, which an <img> cannot inherit: loaded by
+        # src it resolves to its own default black and disappears into the scrim. So over a
+        # photograph the SVG is inlined, where `color` reaches it. Over ink, the gradient
+        # mark is a plain <img> exactly as before.
+        "logo_src": ("" if photo else
+                     (config.BRAND_DIR / "logo" / "print-my-design-mark.svg").as_uri()),
+        "logo_svg": (mono_mark() if photo else ""),
         "font_dir": (config.BRAND_DIR / "fonts").as_uri(),
         **scale_for(width, height, creative["headline"]),
     }

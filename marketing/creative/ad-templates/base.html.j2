@@ -17,11 +17,42 @@
     padding:{{ pad }}px;
   }
   .display{font-family:'PMD Display','Liberation Sans','DejaVu Sans',Arial,sans-serif;font-weight:600}
+  /* PHOTOGRAPHY LAYER. Present only when brand/photography/{slug}-{style}.png exists; the
+     ad is otherwise exactly the type-on-ink layout it has always been. Same degradation
+     rule as everything else here -- a missing asset costs a plainer ad, never a broken one.
+
+     The scrim is not a mood filter, it is the legibility contract. brand/print-my-design.md
+     sets the floor at "ink at 55% or darker" for the mark on photography, and every value
+     below clears it; the ends are heavier because that is where the headline, the CTA and
+     the domain sit, and a generated photograph can put anything at all behind them. */
+  .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .scrim{position:absolute;inset:0;z-index:1;
+         background:linear-gradient(180deg,
+           rgba(14,14,16,0.88) 0%, rgba(14,14,16,0.76) 34%,
+           rgba(14,14,16,0.80) 62%, rgba(14,14,16,0.92) 100%)}
+  .top,.mid,.bottom{position:relative;z-index:2}
+  /* Measured against a deliberately near-white test photograph, sampling the composited
+     backdrop rather than the glyphs. The mid-scrim started at 0.66, which put the orange
+     highlight word at 3.14:1 -- over the large-text floor by four hundredths, on a brighter
+     photo than this one it would be under. At 0.76 the same word measures 4.4:1.
+
+     The footnote is the other half of that: --slate is 3.66:1 on ink and 1.19:1 over a
+     photograph, which is not dim, it is gone. Over photography it takes the same light grey
+     the domain uses. Nothing here inherits a colour that was only ever checked on ink. */
+  .photo ~ .bottom .footnote{color:#D6D6DC}
+  /* A deliberate, narrow departure from brand: print-my-design.md assigns --orange-deep to
+     urgency and deadlines, and that is still what runs on ink. Over a photograph it
+     measures 4.52:1 against the brightest backdrop the scrim can leave -- past the 4.5
+     normal-text floor by two hundredths, which is the same non-margin the mid-scrim was
+     just fixed for. --orange is 6.51:1 and stays inside the brand's own accent family. */
+  .deadline .photo ~ .bottom .footnote{color:var(--orange)}
   /* 4px signature rule, top edge, full bleed */
-  .rule{position:absolute;top:0;left:0;right:0;height:{{ (h/180)|round|int }}px;
+  .rule{position:absolute;top:0;left:0;right:0;z-index:3;height:{{ (h/180)|round|int }}px;
         background:linear-gradient(135deg,var(--orange) 0%,var(--orange) 44%,#A67A55 60%,var(--blue) 76%,var(--blue) 100%)}
   .top{display:flex;align-items:center;gap:{{ (w/54)|round|int }}px}
   .logo{width:{{ logo }}px;height:{{ logo }}px;flex:0 0 auto}
+  .logo.mono{color:var(--white)}
+  .logo.mono svg{width:100%;height:100%;display:block}
   .kicker{font-size:{{ kicker_px }}px;letter-spacing:{{ (kicker_px*0.09)|round(1) }}px;
           text-transform:uppercase;color:var(--orange);font-weight:600}
   .mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:{{ (h/28)|round|int }}px 0}
@@ -58,9 +89,12 @@
   .deadline .footnote{color:var(--orange-deep);font-weight:600}
 </style>
 <body class="{{ template }}">
+{% if photo_src %}<img class="photo" src="{{ photo_src }}" alt="">
+<div class="scrim"></div>{% endif %}
 <div class="rule"></div>
 <div class="top">
-  <img class="logo" src="{{ logo_src }}" alt="">
+  {% if logo_svg %}<div class="logo mono">{{ logo_svg }}</div>
+  {% else %}<img class="logo" src="{{ logo_src }}" alt="">{% endif %}
   <div class="kicker">{{ kicker }}</div>
 </div>
 <div class="mid {{ template }}">

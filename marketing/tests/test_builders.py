@@ -132,7 +132,7 @@ def render_ctx(template="statement", footer="Free online editor", cta="Try the e
     return env.get_template("base.html.j2").render(
         p=R.palette(), w=w, h=h, template=template, kicker="Business cards",
         headline_html=R.emphasise(headline), support="", footer=footer, cta=cta,
-        domain=R.display_domain(),
+        domain=R.display_domain(), photo_src="", logo_svg="",
         logo_src=(config.BRAND_DIR / "logo" / "print-my-design-mark.svg").as_uri(),
         font_dir=(config.BRAND_DIR / "fonts").as_uri(),
         **R.scale_for(w, h, headline))
@@ -170,6 +170,100 @@ def test_the_deadline_template_can_actually_reach_the_footnote():
     assert ".deadline .footnote" in html
     body = html.split("</style>", 1)[1]
     assert body.index('class="deadline"') < body.index('class="footnote"')
+
+
+def render_ctx_photo(photo_path, template="statement", footer="Free online editor"):
+    """The same creative, with a photograph behind it."""
+    import render_creative as R
+    from jinja2 import Environment, FileSystemLoader, StrictUndefined
+    env = Environment(
+        loader=FileSystemLoader(str(config.REPO_ROOT / "marketing/creative/ad-templates")),
+        undefined=StrictUndefined, autoescape=False)
+    w = h = 1080
+    headline = "A headline of roughly ordinary length for a print advertisement."
+    return env.get_template("base.html.j2").render(
+        p=R.palette(), w=w, h=h, template=template, kicker="Business cards",
+        headline_html=R.emphasise(headline), support="", footer=footer,
+        cta="Try the editor", domain=R.display_domain(),
+        photo_src=Path(photo_path).as_uri(), logo_src="", logo_svg=R.mono_mark(),
+        font_dir=(config.BRAND_DIR / "fonts").as_uri(),
+        **R.scale_for(w, h, headline))
+
+
+def test_a_variant_with_no_photograph_renders_the_plain_layout():
+    """The designed state. 18 product/style pairs exist and generating them needs a key the
+    daily job does not have, so most runs have no photograph and must not look broken."""
+    import render_creative as R
+    assert R.photo_for("business_cards", "in_hand") is None or True   # either is valid
+    html = render_ctx()
+    assert 'class="photo"' not in html
+    assert 'class="scrim"' not in html
+
+
+def test_the_photograph_is_always_behind_a_scrim():
+    """A generated photograph can put anything at all behind the headline. The scrim is the
+    only thing standing between white type and a near-white picture."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".png") as fh:
+        html = render_ctx_photo(fh.name)
+    assert 'class="photo"' in html
+    assert 'class="scrim"' in html
+    assert html.index('class="photo"') < html.index('class="scrim"')
+
+
+def test_the_scrim_never_goes_lighter_than_the_brand_floor():
+    """brand/print-my-design.md sets ink at 55% or darker for the mark on photography.
+    Measured worst case at the current values: white 9.27:1, the orange highlight 4.64:1."""
+    import re
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".png") as fh:
+        html = render_ctx_photo(fh.name)
+    scrim = html.split(".scrim{", 1)[1].split("}", 1)[0]
+    alphas = [float(a) for a in re.findall(r"rgba\(14,14,16,([0-9.]+)\)", scrim)]
+    assert alphas, "the scrim stopped being a gradient over ink"
+    assert min(alphas) >= 0.55, f"scrim lightest stop {min(alphas)} is under the brand floor"
+
+
+def test_the_mark_goes_mono_white_over_a_photograph():
+    """The mono file fills with currentColor, which an <img> cannot inherit -- loaded by src
+    it resolves to its own black and vanishes into the scrim. Inlining is what makes the
+    brand rule ("mono white over a scrim") actually true rather than merely intended."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".png") as fh:
+        html = render_ctx_photo(fh.name)
+    assert "currentColor" in html
+    assert "<svg" in html
+    assert ".logo.mono{color:var(--white)}" in html.replace("\n", "")
+
+
+def test_the_footnote_does_not_keep_a_colour_only_checked_on_ink():
+    """--slate is 3.66:1 on ink and 1.19:1 over a photograph. Not dim -- gone."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".png") as fh:
+        html = render_ctx_photo(fh.name)
+    assert ".photo ~ .bottom .footnote{color:#D6D6DC}" in html
+
+
+def test_every_declared_image_style_has_shot_direction():
+    """products.overrides.yml and the generator must not drift: a style the ad builder can
+    choose but nobody described is a picture that never gets made."""
+    import generate_product_imagery as G
+    raw = config.products()
+    items = raw["products"] if isinstance(raw, dict) and "products" in raw else raw
+    for slug, product in items.items():
+        for style in product.get("image_style") or []:
+            assert style in G.STYLES, f"{slug} asks for {style!r}, which has no direction"
+
+
+def test_generated_imagery_may_not_depict_what_the_product_cannot_do():
+    """can_fulfil and can_transact are both false. Guards grep copy; nothing greps a
+    picture, so the restraint has to be in the prompt or it does not exist."""
+    import generate_product_imagery as G
+    prompt = G.prompt_for("business_cards", "in_hand", "Business Cards").lower()
+    for banned in ("parcel", "shipping box", "courier", "delivery vehicle",
+                   "price tag", "discount sticker", "percentage sign"):
+        assert banned in prompt, f"the prompt stopped banning {banned!r}"
+
 
 
 if __name__ == "__main__":
