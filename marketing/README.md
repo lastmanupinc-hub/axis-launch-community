@@ -68,7 +68,7 @@ for t in guards sources config calendar; do python3 marketing/tests/test_$t.py; 
 |---|---|---|
 | `daily-newsletter.yml` | 11:12 UTC daily | Builds the issue, commits the archive, uploads an artifact, then dispatches via the `newsletter-send` environment. |
 | `daily-ads.yml` | 12:07 UTC daily | Builds the ad set, renders creative at three ratios, commits both, then offers them via the `ads-publish` environment. |
-| `marketing-ci.yml` | every PR | Runs all 112 tests plus a 14-day ad build and an offline newsletter build. |
+| `marketing-ci.yml` | every PR | Runs all 124 tests plus a 14-day ad build and an offline newsletter build. |
 
 ### Two independent safety switches
 
@@ -81,6 +81,37 @@ Neither daily job can send or spend until **both** are deliberately turned on:
 
 Ads are created **PAUSED** even on a live publish. Turning spend on is a human action in Ads
 Manager and there is no flag that changes that.
+
+## The catalogue is generated, not maintained
+
+`config/products.yml` is a **generated file**. The catalogue is an active workstream in the
+product repo, so a hand-written copy here would go stale without anyone noticing until an ad
+linked to a product that no longer exists.
+
+```bash
+# regenerate from the storefront's own catalogue
+python3 marketing/scripts/import_catalogue.py --pmd-repo /path/to/PMD-MASTER
+
+# fail if the catalogue has moved and this has not been regenerated
+python3 marketing/scripts/import_catalogue.py --pmd-repo /path/to/PMD-MASTER --check
+```
+
+What you edit is `config/products.overrides.yml`: the short name, role, keywords, image
+styles and talking points per product, plus the whole offers, seasonal_offers, evidence and
+not_built blocks. Everything else is overwritten on every import. Add a product key to the
+overrides *before* it appears in the catalogue and its copy is ready the day it ships.
+
+When a new product arrives with no copy yet, the importer says so and fills sensible defaults
+rather than dropping it. `test_importer.py` fails if any generated product has no override
+entry, so the gap cannot pass unnoticed.
+
+**Printful is where the catalogue is heading.** The product repo wired it because its v1
+catalog needs no authentication and returns real, flat-rate prices, which makes a price
+cost-justified rather than a placeholder. The importer already reads a Printful export
+(`--printful`) and marks those prices `vendor_quoted`. Flat-rate also decides what may be
+said: it is the one case where multiplying a stated price by a quantity is arithmetic rather
+than a guess. Everywhere else, never advertise a per-unit price at a quantity and never imply
+a volume discount - the product repo's own note puts the real drop at 3.3x between 50 and 500.
 
 ## Configuration
 
@@ -135,14 +166,17 @@ failure.
    a "100% satisfaction guarantee" while nothing can ship and no money is taken. Both are
    recorded in `config/launch-readiness.yml` under `site_claims_to_correct`. This system will
    not repeat them, but it also cannot fix the page.
-5. **Settle the brand.** The supplied logo and the live site disagree on wordmark and colour.
-   See `brand/print-my-design.md`, "The unresolved identity question".
-6. **Set `PMD_POSTAL_ADDRESS`** to a real address. Nothing sends without it, by design.
-7. **Point `ASSET_BASE_URL`** at wherever you host `brand/logo/png/email-header@2x.png`.
-8. **Vendor the brand fonts** into `brand/fonts/` as `.woff2`. Without them the creative
+5. **Set `PMD_POSTAL_ADDRESS`** to a real address. Nothing sends without it, by design.
+6. **Point `ASSET_BASE_URL`** at wherever you host `brand/logo/png/email-header@2x.png`.
+7. **Vendor the brand fonts** into `brand/fonts/` as `.woff2`. Without them the creative
    renderer falls back to a system sans and says so; fine for proofing, not for anything live.
-9. **Confirm the consent posture** for any non-US subscriber, and get a lawyer's eye on any
+8. **Confirm the consent posture** for any non-US subscriber, and get a lawyer's eye on any
    guarantee you plan to advertise. `strategy/compliance.md` section 7 says why.
+
+Not on this list on purpose: the logo and the live site disagree on wordmark and accent
+colour. The product team is prioritising the catalogue over the theme, which is the right
+order, so this system follows the supplied asset and does not wait. See
+`brand/print-my-design.md`, "The identity question, deferred".
 
 ### What can run today, honestly
 

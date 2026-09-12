@@ -83,9 +83,14 @@ The voice follows from that:
 - **Price is never hidden.** If a post implies a price, the post states the price.
 - **One ask per asset.** Every ad ends on one verb.
 
-## The unresolved identity question
+## The identity question, deferred
 
-The supplied logo and the live site do not agree, and somebody has to decide which is right.
+The supplied logo and the live site do not agree. **This is deliberately not being resolved
+now** - the product team is prioritising the catalogue over the theme, which is the right
+call: a catalogue with no products is a broken shop, while two blues is a cosmetic mismatch
+on a shop that already works.
+
+Recorded here so the decision is ready when the theme comes up, not so it blocks anything.
 
 | | Supplied brand asset | Live storefront |
 |---|---|---|
@@ -103,7 +108,7 @@ Everything in `palette.json` is sampled from it. But every asset this system pro
 therefore look unlike the site it links to, which is a real inconsistency a visitor will
 notice at the click.
 
-Three ways out, in the order I would take them:
+Three ways out, for whenever the theme comes up:
 
 1. Bring the site to the logo. One accent token and a wordmark swap; the smallest change that
    makes the two agree.
@@ -111,9 +116,12 @@ Three ways out, in the order I would take them:
    Cheap, but it discards the gradient that makes the mark distinctive.
 3. Decide they are different brands — "PMD Print Studio" the product, "Print My Design" the
    company. Defensible, and it needs saying out loud, because right now it reads as an
-   accident rather than a decision.
 
-Until it is resolved, the ad creative and the landing page will not match.
+**Meanwhile this system follows the supplied asset and does not wait.** The consequence
+to accept knowingly: ad creative will not match the page it links to. At today's spend,
+which is zero, that costs nothing. It starts costing something the day paid traffic runs,
+which is also the day the catalogue work will have landed, so the sequencing takes care
+of itself.
 
 ## What we never do
 

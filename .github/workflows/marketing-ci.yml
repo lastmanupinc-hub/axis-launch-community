@@ -32,6 +32,9 @@ jobs:
       - name: Calendar covers a whole year and every day builds
         run: python3 marketing/tests/test_calendar.py
 
+      - name: Catalogue importer round-trips
+        run: python3 marketing/tests/test_importer.py
+
       - name: Builders stay inside what the product can honour
         env:
           PMD_POSTAL_ADDRESS: "CI placeholder, 1 Example Street, Example City"

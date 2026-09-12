@@ -106,6 +106,33 @@ print_my_design:
       M1 is reached, the design studio works, and saving a design does not require payment.
     forbidden_ask: "Anything that implies a purchase, a price, a delivery, or a deadline."
 
+  # The path that closes has_price_confidence, and probably can_fulfil with it.
+  printful_path:
+    status: in_progress
+    note: >
+      The product repo wired Printful (commit aba0e82) precisely because it is sellable
+      soonest: its v1 catalog needs no authentication and returns real prices, and those
+      prices are FLAT-RATE. Flat-rate is the load-bearing property for advertising, because
+      it is the one case where multiplying a stated price by a quantity is arithmetic rather
+      than estimation. A verification run imported 145 variants across 32 products (70
+      poster, 53 postcard, 22 sticker) and quoted them live with the 6% floor applied.
+    what_it_unlocks:
+      - "has_price_confidence, per product, for anything imported with price_basis: vendor_quoted"
+      - "a shorter route to can_fulfil, since Printful is a dropshipper - but an order
+         submission adapter still has to be written; the wired adapters are cost-lookup only"
+    advertising_traps:
+      - >
+        Business cards are sold as PACKS, not loose units: "Set of Business Cards" at 50
+        pieces and 100 pieces. Ordering quantity 2 of the 100-pack is two sets. An ad that
+        says "250 business cards" is advertising a tier that does not exist on this path.
+      - >
+        The storefront's quantity tiers (50/100/250/500/1000/2500/5000 for cards) come from
+        the hardcoded UI catalogue, not from Printful, and are not price breaks. Do not
+        advertise a per-unit price at a quantity unless the product carries flat_rate: true.
+    action: >
+      Run scripts/import_catalogue.py --printful <export.json> once a catalogue export
+      exists. It marks those prices vendor_quoted. Then flip has_price_confidence.
+
   # Known live-site problems found during the audit. Not this system's to fix, but this
   # system must not amplify them.
   site_claims_to_correct:
